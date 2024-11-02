@@ -1,0 +1,11 @@
+[package]
+name = "lispers"
+description = "lisp interpreter in rust"
+publish = false
+version = "0.1.0"
+
+edition = "2021"
+
+[dependencies]
+futures = "0.3.30"
+nix = "0.29.0"
