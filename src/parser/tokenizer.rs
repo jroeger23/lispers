@@ -1,6 +1,6 @@
 use super::token::Token;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 /// Errors the tokenizer can yield.
 pub enum TokenizerError {
     /// The tokenizer could not read the associated sequence.
