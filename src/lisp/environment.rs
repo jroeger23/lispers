@@ -1,5 +1,10 @@
-use super::expression::Expression;
-use std::collections::HashMap;
+use super::{expression::Expression, prelude::mk_prelude};
+use std::{
+    borrow::BorrowMut,
+    cell::{RefCell, RefMut},
+    collections::HashMap,
+    rc::Rc,
+};
 
 #[derive(PartialEq, Clone, Debug)]
 /// A Environment is a stack of `EnvironmentLayer`s. Each `EnvironmentLayer` is a mapping from
@@ -9,6 +14,8 @@ pub struct Environment<'a> {
     layer: EnvironmentLayer,
     /// The outer _fallback_ mapping.
     outer: Option<&'a Environment<'a>>,
+    /// A shared layer taking precendence over the outer layer, but not the current layer.
+    shared: Rc<RefCell<EnvironmentLayer>>,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -31,8 +38,8 @@ impl EnvironmentLayer {
     }
 
     /// Get a value in the `EnvironmentLayer`.
-    pub fn get(&self, key: &str) -> Option<&Expression> {
-        self.symbols.get(key)
+    pub fn get(&self, key: &str) -> Option<Expression> {
+        self.symbols.get(key).cloned()
     }
 }
 
@@ -48,12 +55,17 @@ impl<'a> Environment<'a> {
         Environment {
             layer: EnvironmentLayer::new(),
             outer: None,
+            shared: Rc::new(RefCell::new(EnvironmentLayer::new())),
         }
     }
 
     /// Construct an `Environment` from a `EnvironmentLayer` with no outer `Environment`.
     pub fn from_layer(layer: EnvironmentLayer) -> Self {
-        Environment { layer, outer: None }
+        Environment {
+            layer,
+            outer: None,
+            shared: Rc::new(RefCell::new(EnvironmentLayer::new())),
+        }
     }
 
     /// Construct a new `Environment` with `self` as the outer `Environment`.
@@ -61,6 +73,7 @@ impl<'a> Environment<'a> {
         Environment {
             layer: EnvironmentLayer::new(),
             outer: Some(self),
+            shared: self.shared.clone(),
         }
     }
 
@@ -69,21 +82,62 @@ impl<'a> Environment<'a> {
         Environment {
             layer,
             outer: Some(&self),
+            shared: Rc::new(RefCell::new(EnvironmentLayer::new())),
+        }
+    }
+
+    /// Set a value in the shared layer.
+    ///
+    /// Panics:
+    /// - if the shared layer cannot be borrowed mutably.
+    pub fn shared_set(&self, key: String, value: Expression) {
+        match self.shared.try_borrow_mut() {
+            Ok(mut shared) => shared.set(key, value),
+            Err(e) => panic!("Cannot borrow shared layer mutably. ({})", e),
+        }
+    }
+
+    /// Get a value from the shared layer.
+    pub fn shared_get(&self, key: &str) -> Option<Expression> {
+        self.shared.borrow().get(key)
+    }
+
+    /// Get a value from the `Environment`, without looking at the shared layer.
+    pub fn layer_get(&self, key: &str) -> Option<Expression> {
+        if let Some(e) = self.layer.get(key) {
+            Some(e)
+        } else {
+            self.outer?.layer_get(key).clone()
         }
     }
 
     /// Get a value from the `Environment`.
-    pub fn get(&self, key: &str) -> Option<&Expression> {
+    pub fn get(&self, key: &str) -> Option<Expression> {
         if let Some(e) = self.layer.get(key) {
             Some(e)
+        } else if let Some(e) = self.shared_get(key) {
+            Some(e)
         } else {
-            self.outer?.get(key)
+            self.outer?.layer_get(key).clone()
         }
     }
 
     /// Set a value in the current `EnvironmentLayer`.
     pub fn set(&mut self, key: String, value: Expression) {
         self.layer.set(key, value);
+    }
+}
+
+impl Default for Environment<'_> {
+    /// Get the default prelude layer
+    fn default() -> Self {
+        let mut prelude = EnvironmentLayer::new();
+        mk_prelude(&mut prelude);
+        Environment {
+            layer: prelude,
+            outer: None,
+            shared: Rc::new(RefCell::new(EnvironmentLayer::new())),
+        }
     }
 }
 
@@ -94,9 +148,9 @@ fn test_environment() {
     env.set("b".to_string(), Expression::Integer(2));
     let mut inner = env.mk_inner();
     inner.set("a".to_string(), Expression::Integer(3));
-    assert_eq!(inner.get("a"), Some(&Expression::Integer(3)));
-    assert_eq!(inner.get("b"), Some(&Expression::Integer(2)));
-    assert_eq!(env.get("a"), Some(&Expression::Integer(1)));
-    assert_eq!(env.get("b"), Some(&Expression::Integer(2)));
+    assert_eq!(inner.get("a"), Some(Expression::Integer(3)));
+    assert_eq!(inner.get("b"), Some(Expression::Integer(2)));
+    assert_eq!(env.get("a"), Some(Expression::Integer(1)));
+    assert_eq!(env.get("b"), Some(Expression::Integer(2)));
     assert_eq!(env.get("c"), None);
 }
