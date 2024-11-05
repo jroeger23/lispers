@@ -159,6 +159,8 @@ where
     TokenStream::new(input)
 }
 
+// ================== Scanner definitions ================== //
+
 fn scan_par_open<I>(reader: &mut StagingReader<I>) -> Option<Token>
 where
     I: Iterator<Item = char>,
