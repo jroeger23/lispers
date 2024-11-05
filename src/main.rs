@@ -38,8 +38,17 @@ fn main() {
             .into(),
         ]
         .into(),
-        Expression::Integer(4),
-        Expression::Integer(7),
+        Expression::Integer(5),
+        vec![
+            Expression::Symbol("let".to_string()),
+            vec![Expression::Cell(
+                Box::new(Expression::Symbol("y".to_string())),
+                Box::new(Expression::Integer(7)),
+            )]
+            .into(),
+            Expression::Symbol("y".to_string()),
+        ]
+        .into(),
     ]
     .into();
 

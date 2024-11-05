@@ -36,6 +36,12 @@ impl EnvironmentLayer {
     }
 }
 
+impl From<HashMap<String, Expression>> for EnvironmentLayer {
+    fn from(map: HashMap<String, Expression>) -> Self {
+        EnvironmentLayer { symbols: map }
+    }
+}
+
 impl<'a> Environment<'a> {
     /// Construct an empty `Environment`.
     pub fn new() -> Self {

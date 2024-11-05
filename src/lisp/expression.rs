@@ -1,4 +1,5 @@
 use super::environment::{Environment, EnvironmentLayer};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 /// A sum type of all possible lisp expressions.
@@ -175,7 +176,10 @@ fn eval(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
             a => Err(EvalError::NotAFunction(a)),
         },
         Expression::Quote(e) => Ok(*e),
-        Expression::Symbol(s) => env.get(&s).ok_or(EvalError::SymbolNotBound(s)).cloned(),
+        Expression::Symbol(s) => eval(
+            env,
+            env.get(&s).ok_or(EvalError::SymbolNotBound(s)).cloned()?,
+        ),
         x => Ok(x),
     }
 }
@@ -205,6 +209,25 @@ fn prelude_lambda(_env: &Environment, expr: Expression) -> Result<Expression, Ev
         argument_symbols,
         body: Box::new(body),
     })
+}
+
+fn prelude_let(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [bindings, body] = expr.try_into()?;
+
+    let bindings = CellIterator::new(bindings)
+        .map(|e| {
+            let (s, e) = e?.try_into()?;
+            if let Expression::Symbol(s) = s {
+                Ok((s, eval(env, e)?))
+            } else {
+                Err(EvalError::ArgumentError(
+                    "Let bindings must be an alist with elements (symbol . expr)".to_string(),
+                ))
+            }
+        })
+        .collect::<Result<HashMap<String, Expression>, EvalError>>()?;
+
+    eval(&env.overlay(bindings.into()), body)
 }
 
 fn prelude_if(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
@@ -260,6 +283,7 @@ pub fn eval_prelude(expr: Expression) -> Result<Expression, EvalError> {
     prelude.set("==".to_string(), Expression::Function(prelude_eq));
     prelude.set("<".to_string(), Expression::Function(prelude_lt));
     prelude.set(">".to_string(), Expression::Function(prelude_gt));
+    prelude.set("let".to_string(), Expression::Function(prelude_let));
 
     eval(&prelude, expr)
 }
