@@ -277,12 +277,12 @@ fn prelude_gt(env: &Environment, expr: Expression) -> Result<Expression, EvalErr
 
 pub fn eval_prelude(expr: Expression) -> Result<Expression, EvalError> {
     let mut prelude = Environment::new();
-    prelude.set("add".to_string(), Expression::Function(prelude_add));
+    prelude.set("+".to_string(), Expression::Function(prelude_add));
     prelude.set("lambda".to_string(), Expression::Function(prelude_lambda));
     prelude.set("if".to_string(), Expression::Function(prelude_if));
-    prelude.set("eq".to_string(), Expression::Function(prelude_eq));
-    prelude.set("lt".to_string(), Expression::Function(prelude_lt));
-    prelude.set("gt".to_string(), Expression::Function(prelude_gt));
+    prelude.set("==".to_string(), Expression::Function(prelude_eq));
+    prelude.set("<".to_string(), Expression::Function(prelude_lt));
+    prelude.set(">".to_string(), Expression::Function(prelude_gt));
     prelude.set("let".to_string(), Expression::Function(prelude_let));
 
     eval(&prelude, expr)

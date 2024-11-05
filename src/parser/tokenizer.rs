@@ -252,12 +252,15 @@ where
 {
     let mut sym = String::new();
 
+    // Allow some special chars and alphanumeric
     while let Some(c) = reader.next() {
-        if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
-            sym.push(c);
-        } else {
-            reader.step_back(1);
-            break;
+        match c {
+            '_' | '-' | '<' | '>' | '=' | '*' | '/' | '+' | '%' | '!' | '?' => sym.push(c),
+            c if c.is_ascii_alphanumeric() => sym.push(c),
+            _ => {
+                reader.step_back(1);
+                break;
+            }
         }
     }
 
@@ -334,11 +337,11 @@ where
 
 #[test]
 fn test_tokenize() {
-    let test_str = "(\"abcdefg( )123\" )(\n\t 'nil true \"true\")00987463 123.125 .";
+    let test_str = "(\"abcdefg( )123\" )(\n\t 'nil true \"true\")00987463 123.125 . 0+-*/go=";
 
     let result: Vec<_> = tokenize(&mut test_str.chars()).collect();
 
-    assert_eq!(result.len(), 12);
+    assert_eq!(result.len(), 13);
     assert_eq!(result[0].clone().unwrap(), Token::ParOpen);
     assert_eq!(
         result[1].clone().unwrap(),
@@ -357,4 +360,8 @@ fn test_tokenize() {
     assert_eq!(result[9].clone().unwrap(), Token::IntLiteral(987463));
     assert_eq!(result[10].clone().unwrap(), Token::FloatLiteral(123.125));
     assert_eq!(result[11].clone().unwrap(), Token::Dot);
+    assert_eq!(
+        result[12].clone().unwrap(),
+        Token::Symbol("0+-*/go=".to_string())
+    );
 }
