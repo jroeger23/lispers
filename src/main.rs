@@ -4,7 +4,7 @@ use lisp::eval_prelude;
 use parser::ExpressionStream;
 
 fn main() {
-    let program = "((lambda (x y) (+ (if (< x 10) (+ x 10) x) y)) 2 20)";
+    let program = "((lambda (x y) (+ (if (< x 10) (* x 11) x) y)) 2 20)";
 
     for r in ExpressionStream::from_char_stream(program.chars()) {
         match r {

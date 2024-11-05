@@ -34,6 +34,7 @@ pub enum Expression {
 pub enum EvalError {
     SymbolNotBound(String),
     NotAFunction(Expression),
+    NotANumber(Expression),
     ArgumentError(String),
     TypeError(String),
     NotASymbol(Expression),
@@ -189,10 +190,73 @@ fn eval(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
 fn prelude_add(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [a, b] = expr.try_into()?;
 
-    let a: i64 = eval(env, a)?.try_into()?;
-    let b: i64 = eval(env, b)?.try_into()?;
+    match eval(env, a)? {
+        Expression::Integer(a) => match eval(env, b)? {
+            Expression::Integer(b) => Ok(Expression::Integer(a + b)),
+            Expression::Float(b) => Ok(Expression::Float(a as f64 + b)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        Expression::Float(a) => match eval(env, b)? {
+            Expression::Float(b) => Ok(Expression::Float(a + b)),
+            Expression::Integer(b) => Ok(Expression::Float(a + b as f64)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        x => Err(EvalError::NotANumber(x)),
+    }
+}
 
-    Ok(Expression::Integer(a + b))
+fn prelude_sub(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a, b] = expr.try_into()?;
+
+    match eval(env, a)? {
+        Expression::Integer(a) => match eval(env, b)? {
+            Expression::Integer(b) => Ok(Expression::Integer(a - b)),
+            Expression::Float(b) => Ok(Expression::Float(a as f64 - b)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        Expression::Float(a) => match eval(env, b)? {
+            Expression::Float(b) => Ok(Expression::Float(a - b)),
+            Expression::Integer(b) => Ok(Expression::Float(a - b as f64)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        x => Err(EvalError::NotANumber(x)),
+    }
+}
+
+fn prelude_mul(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a, b] = expr.try_into()?;
+
+    match eval(env, a)? {
+        Expression::Integer(a) => match eval(env, b)? {
+            Expression::Integer(b) => Ok(Expression::Integer(a * b)),
+            Expression::Float(b) => Ok(Expression::Float(a as f64 * b)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        Expression::Float(a) => match eval(env, b)? {
+            Expression::Float(b) => Ok(Expression::Float(a * b)),
+            Expression::Integer(b) => Ok(Expression::Float(a * b as f64)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        x => Err(EvalError::NotANumber(x)),
+    }
+}
+
+fn prelude_div(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a, b] = expr.try_into()?;
+
+    match eval(env, a)? {
+        Expression::Integer(a) => match eval(env, b)? {
+            Expression::Integer(b) => Ok(Expression::Integer(a / b)),
+            Expression::Float(b) => Ok(Expression::Float(a as f64 / b)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        Expression::Float(a) => match eval(env, b)? {
+            Expression::Float(b) => Ok(Expression::Float(a / b)),
+            Expression::Integer(b) => Ok(Expression::Float(a / b as f64)),
+            x => Err(EvalError::NotANumber(x)),
+        },
+        x => Err(EvalError::NotANumber(x)),
+    }
 }
 
 fn prelude_lambda(_env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
@@ -278,6 +342,9 @@ fn prelude_gt(env: &Environment, expr: Expression) -> Result<Expression, EvalErr
 pub fn eval_prelude(expr: Expression) -> Result<Expression, EvalError> {
     let mut prelude = Environment::new();
     prelude.set("+".to_string(), Expression::Function(prelude_add));
+    prelude.set("-".to_string(), Expression::Function(prelude_sub));
+    prelude.set("*".to_string(), Expression::Function(prelude_mul));
+    prelude.set("/".to_string(), Expression::Function(prelude_div));
     prelude.set("lambda".to_string(), Expression::Function(prelude_lambda));
     prelude.set("if".to_string(), Expression::Function(prelude_if));
     prelude.set("==".to_string(), Expression::Function(prelude_eq));
