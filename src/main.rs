@@ -6,8 +6,8 @@ use crate::lisp::{eval, Environment};
 
 fn main() {
     let program1 = "((lambda (x y) (+ (if (< x 10) (* x 11) x) y)) 2 20)";
-    let program2 = "(set myvar \"hello world!\")";
-    let program3 = "(print myvar)";
+    let program2 = "(set 'myvar \"hello world!\")";
+    let program3 = "(print myvar) (print 'myvar)";
 
     let environment = Environment::default();
 

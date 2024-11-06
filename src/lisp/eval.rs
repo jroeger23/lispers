@@ -85,7 +85,7 @@ fn dispatch_anonymous_function(
     }
 
     for (arg, symbol) in args.iter_mut().zip(argument_symbols.iter()) {
-        overlay.set(symbol.to_owned(), arg.to_owned());
+        overlay.set(symbol.to_owned(), eval(env, arg.to_owned())?);
     }
 
     eval(&env.overlay(overlay), body)

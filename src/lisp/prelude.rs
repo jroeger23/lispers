@@ -161,10 +161,11 @@ pub fn prelude_gt(env: &Environment, expr: Expression) -> Result<Expression, Eva
 pub fn prelude_set(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [s, e] = expr.try_into()?;
 
-    match s {
+    match eval(env, s)? {
         Expression::Symbol(s) => {
-            env.shared_set(s, e);
-            Ok(Expression::Nil)
+            let e = eval(env, e)?;
+            env.shared_set(s, e.clone());
+            Ok(e)
         }
         x => Err(EvalError::NotASymbol(x)),
     }
