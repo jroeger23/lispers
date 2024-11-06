@@ -82,7 +82,7 @@ impl<'a> Environment<'a> {
         Environment {
             layer,
             outer: Some(&self),
-            shared: Rc::new(RefCell::new(EnvironmentLayer::new())),
+            shared: self.shared.clone(),
         }
     }
 
