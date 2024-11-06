@@ -7,9 +7,9 @@ use crate::lisp::{eval, Environment};
 fn main() {
     let program1 = "((lambda (x y) (+ (if (< x 10) (* x 11) x) y)) 2 20)";
     let program2 = "(set myvar \"hello world!\")";
-    let program3 = "myvar";
+    let program3 = "(print myvar)";
 
-    let mut environment = Environment::default();
+    let environment = Environment::default();
 
     for r in ExpressionStream::from_char_stream(
         program1
@@ -19,11 +19,13 @@ fn main() {
     ) {
         match r {
             Err(err) => println!("ParserError: {:?}", err),
-            Ok(expr) => println!(
-                "{:?} \n vvvvvvvvvvv \n {:?}\n",
-                expr.clone(),
-                eval(&environment, expr)
-            ),
+            Ok(expr) => {
+                println!("Evaluating: {}", expr.clone());
+                match eval(&environment, expr) {
+                    Ok(e) => println!("=> {}", e),
+                    Err(e) => println!("Error: {}", e),
+                }
+            }
         }
     }
 

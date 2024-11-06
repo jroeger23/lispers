@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::environment::Environment;
 use super::environment::EnvironmentLayer;
 use super::expression::Expression;
@@ -11,6 +13,19 @@ pub enum EvalError {
     ArgumentError(String),
     TypeError(String),
     NotASymbol(Expression),
+}
+
+impl Display for EvalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            EvalError::SymbolNotBound(s) => write!(f, "Symbol {} is not bound", s),
+            EvalError::NotAFunction(e) => write!(f, "Expression {} is not a function", e),
+            EvalError::NotANumber(e) => write!(f, "Expression {} is not a number", e),
+            EvalError::ArgumentError(s) => write!(f, "Argument error: {}", s),
+            EvalError::TypeError(s) => write!(f, "Type error: {}", s),
+            EvalError::NotASymbol(e) => write!(f, "Expression {} is not a symbol", e),
+        }
+    }
 }
 
 /// A CellIterator is a convenience struct to iterate a linked cons list.
