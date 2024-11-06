@@ -97,7 +97,7 @@ pub fn prelude_lambda(_env: &Environment, expr: Expression) -> Result<Expression
 pub fn prelude_let(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [bindings, body] = expr.try_into()?;
 
-    let bindings = CellIterator::new(bindings)
+    let bindings = CellIterator::new(eval(env, bindings)?)
         .map(|e| {
             let (s, e) = e?.try_into()?;
             if let Expression::Symbol(s) = s {
@@ -158,6 +158,14 @@ pub fn prelude_gt(env: &Environment, expr: Expression) -> Result<Expression, Eva
     }
 }
 
+pub fn prelude_not(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a] = expr.try_into()?;
+    match a {
+        Expression::Nil => Ok(Expression::True),
+        _ => Ok(Expression::Nil),
+    }
+}
+
 pub fn prelude_set(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [s, e] = expr.try_into()?;
 
@@ -178,6 +186,31 @@ pub fn prelude_print(env: &Environment, expr: Expression) -> Result<Expression, 
     Ok(e)
 }
 
+pub fn prelude_cons(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a, b] = expr.try_into()?;
+    Ok(Expression::Cell(
+        Box::new(eval(env, a)?),
+        Box::new(eval(env, b)?),
+    ))
+}
+
+pub fn prelude_car(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [arg] = expr.try_into()?;
+    let (a, _) = eval(env, arg)?.try_into()?;
+    Ok(a)
+}
+
+pub fn prelude_cdr(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [arg] = expr.try_into()?;
+    let (_, b) = eval(env, arg)?.try_into()?;
+    Ok(b)
+}
+
+pub fn prelude_eval(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [e] = expr.try_into()?;
+    eval(env, eval(env, e)?)
+}
+
 pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("+".to_string(), Expression::Function(prelude_add));
     layer.set("-".to_string(), Expression::Function(prelude_sub));
@@ -185,10 +218,15 @@ pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("/".to_string(), Expression::Function(prelude_div));
     layer.set("lambda".to_string(), Expression::Function(prelude_lambda));
     layer.set("if".to_string(), Expression::Function(prelude_if));
-    layer.set("==".to_string(), Expression::Function(prelude_eq));
+    layer.set("=".to_string(), Expression::Function(prelude_eq));
     layer.set("<".to_string(), Expression::Function(prelude_lt));
     layer.set(">".to_string(), Expression::Function(prelude_gt));
+    layer.set("not".to_string(), Expression::Function(prelude_not));
     layer.set("let".to_string(), Expression::Function(prelude_let));
     layer.set("set".to_string(), Expression::Function(prelude_set));
     layer.set("print".to_string(), Expression::Function(prelude_print));
+    layer.set("cons".to_string(), Expression::Function(prelude_cons));
+    layer.set("car".to_string(), Expression::Function(prelude_car));
+    layer.set("cdr".to_string(), Expression::Function(prelude_cdr));
+    layer.set("eval".to_string(), Expression::Function(prelude_eval));
 }

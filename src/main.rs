@@ -5,20 +5,26 @@ use parser::ExpressionStream;
 use crate::lisp::{eval, Environment};
 
 fn main() {
-    let program1 = "((lambda (x y) (+ (if (< x 10) (* x 11) x) y)) 2 20)";
-    let program2 = "(set 'myvar \"hello world!\")";
-    let program3 = "(print myvar) (print 'myvar)";
+    let programs = [
+        "((lambda (x y) (+ (if (< x 10) (* x 11) x) y)) 2 20)",
+        "(set 'myvar \"hello world!\")",
+        "(print myvar) (print 'myvar)",
+        "(car (cons 'a 'b)) (cdr (cons 'c 'd)) (cons 'a 'b)",
+        "(eval (car (cons 'myvar 'b)))",
+        "(set 'pow (lambda (a b) (if (= b 0) 1 (* a (pow a (- b 1))))))",
+        "pow",
+        "(pow 2 10)",
+        "(let '((fib . (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))))) (fib 10))",
+    ];
 
     let environment = Environment::default();
 
-    for r in ExpressionStream::from_char_stream(
-        program1
-            .chars()
-            .chain(program2.chars())
-            .chain(program3.chars()),
-    ) {
+    for r in ExpressionStream::from_char_stream(programs.iter().map(|p| p.chars()).flatten()) {
         match r {
-            Err(err) => println!("ParserError: {:?}", err),
+            Err(err) => {
+                println!("ParserError: {:?}", err);
+                break;
+            }
             Ok(expr) => {
                 println!("Evaluating: {}", expr.clone());
                 match eval(&environment, expr) {
@@ -30,5 +36,4 @@ fn main() {
     }
 
     println!("Interpreter Done!");
-    println!("Environment: {:?}", environment);
 }
