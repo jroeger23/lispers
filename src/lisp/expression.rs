@@ -1,8 +1,63 @@
+use std::fmt::Debug;
 use std::fmt::Display;
+
+use as_any::AsAny;
 
 use super::environment::Environment;
 use super::eval::CellIterator;
 use super::eval::EvalError;
+
+/// A trait for foreign data types that can be used in lisp expressions.
+/// Note: This trait requires explicit implementation of:
+/// - partial_cmp
+/// - clone_data
+/// - eq
+/// To avoid a derive cycle.
+pub trait ForeignData: Debug + Display + AsAny {
+    fn partial_cmp(&self, other: &dyn ForeignData) -> Option<std::cmp::Ordering>;
+    fn clone_data(&self) -> Box<dyn ForeignData>;
+    fn eq(&self, other: &dyn ForeignData) -> bool;
+}
+
+#[derive(Debug)]
+/// A Wrapper struct for foreign data types injected in expressions.
+pub struct ForeignDataWrapper {
+    /// The actual foreign data.
+    pub data: Box<dyn ForeignData>,
+}
+
+impl ForeignDataWrapper {
+    /// Create a new ForeignDataWrapper from a ForeignData trait object.
+    pub fn new(data: Box<dyn ForeignData>) -> Self {
+        ForeignDataWrapper { data }
+    }
+}
+
+impl Clone for ForeignDataWrapper {
+    fn clone(&self) -> Self {
+        ForeignDataWrapper {
+            data: self.data.clone_data(),
+        }
+    }
+}
+
+impl PartialEq for ForeignDataWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.data.eq(other.data.as_ref())
+    }
+}
+
+impl PartialOrd for ForeignDataWrapper {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.data.partial_cmp(other.data.as_ref())
+    }
+}
+
+impl Display for ForeignDataWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.data)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 /// A sum type of all possible lisp expressions.
@@ -16,6 +71,8 @@ pub enum Expression {
         argument_symbols: Vec<String>,
         body: Box<Expression>,
     },
+    /// A foreign data expression.
+    ForeignExpression(ForeignDataWrapper),
     /// A Quoted expression.
     Quote(Box<Expression>),
     /// A symbol.
@@ -155,6 +212,7 @@ impl TryFrom<Expression> for (Expression, Expression) {
 impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Expression::ForeignExpression(e) => write!(f, "{}", e),
             Expression::Cell(a, b) => {
                 match self.clone().try_into() as Result<Vec<Expression>, EvalError> {
                     Ok(lst) => write!(

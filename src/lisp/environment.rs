@@ -1,4 +1,4 @@
-use super::{expression::Expression, prelude::mk_prelude};
+use super::{expression::Expression, prelude::mk_prelude, vec::mk_vec3};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 #[derive(PartialEq, Clone, Debug)]
@@ -124,12 +124,13 @@ impl<'a> Environment<'a> {
 }
 
 impl Default for Environment<'_> {
-    /// Get the default prelude layer
+    /// Get the default prelude+vec3 layer
     fn default() -> Self {
-        let mut prelude = EnvironmentLayer::new();
-        mk_prelude(&mut prelude);
+        let mut d = EnvironmentLayer::new();
+        mk_prelude(&mut d);
+        mk_vec3(&mut d);
         Environment {
-            layer: prelude,
+            layer: d,
             outer: None,
             shared: Rc::new(RefCell::new(EnvironmentLayer::new())),
         }
