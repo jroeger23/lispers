@@ -56,10 +56,10 @@ impl From<(Expression, Expression)> for Expression {
     }
 }
 
-impl TryInto<i64> for Expression {
+impl TryFrom<Expression> for i64 {
     type Error = EvalError;
-    fn try_into(self) -> Result<i64, Self::Error> {
-        match self {
+    fn try_from(value: Expression) -> Result<i64, Self::Error> {
+        match value {
             Expression::Integer(i) => Ok(i),
             _ => Err(EvalError::TypeError(
                 "Expression is not an Integer".to_string(),
@@ -68,10 +68,10 @@ impl TryInto<i64> for Expression {
     }
 }
 
-impl TryInto<f64> for Expression {
+impl TryFrom<Expression> for f64 {
     type Error = EvalError;
-    fn try_into(self) -> Result<f64, Self::Error> {
-        match self {
+    fn try_from(value: Expression) -> Result<f64, Self::Error> {
+        match value {
             Expression::Float(f) => Ok(f),
             _ => Err(EvalError::TypeError(
                 "Expression is not a Float".to_string(),
@@ -80,10 +80,10 @@ impl TryInto<f64> for Expression {
     }
 }
 
-impl TryInto<String> for Expression {
+impl TryFrom<Expression> for String {
     type Error = EvalError;
-    fn try_into(self) -> Result<String, Self::Error> {
-        match self {
+    fn try_from(value: Expression) -> Result<String, Self::Error> {
+        match value {
             Expression::String(s) => Ok(s),
             _ => Err(EvalError::TypeError(
                 "Expression is not a String".to_string(),
@@ -92,19 +92,35 @@ impl TryInto<String> for Expression {
     }
 }
 
-impl TryInto<Vec<Expression>> for Expression {
+impl TryFrom<Expression> for Vec<Expression> {
     type Error = EvalError;
 
-    fn try_into(self) -> Result<Vec<Expression>, Self::Error> {
-        CellIterator::new(self).collect()
+    fn try_from(value: Expression) -> Result<Vec<Expression>, Self::Error> {
+        CellIterator::new(value).collect()
     }
 }
 
-impl<const N: usize> TryInto<[Expression; N]> for Expression {
+impl<ToExpr> TryFrom<Expression> for Vec<ToExpr>
+where
+    ToExpr: TryFrom<Expression, Error = EvalError>,
+{
     type Error = EvalError;
 
-    fn try_into(self) -> Result<[Expression; N], Self::Error> {
-        let buf: Vec<Expression> = self.try_into()?;
+    fn try_from(value: Expression) -> Result<Vec<ToExpr>, Self::Error> {
+        CellIterator::new(value)
+            .map(|x| x?.try_into() as Result<ToExpr, EvalError>)
+            .collect()
+    }
+}
+
+impl<ToExpr, const N: usize> TryFrom<Expression> for [ToExpr; N]
+where
+    ToExpr: TryFrom<Expression, Error = EvalError>,
+{
+    type Error = EvalError;
+
+    fn try_from(value: Expression) -> Result<[ToExpr; N], Self::Error> {
+        let buf: Vec<ToExpr> = value.try_into()?;
         let n = buf.len();
 
         buf.try_into()
@@ -112,10 +128,22 @@ impl<const N: usize> TryInto<[Expression; N]> for Expression {
     }
 }
 
-impl TryInto<(Expression, Expression)> for Expression {
+impl<const N: usize> TryFrom<Expression> for [Expression; N] {
     type Error = EvalError;
-    fn try_into(self) -> Result<(Expression, Expression), Self::Error> {
-        match self {
+
+    fn try_from(value: Expression) -> Result<[Expression; N], Self::Error> {
+        let buf: Vec<Expression> = value.try_into()?;
+        let n = buf.len();
+
+        buf.try_into()
+            .map_err(|_| EvalError::ArgumentError(format!("Expected {} arguments, got {}", N, n)))
+    }
+}
+
+impl TryFrom<Expression> for (Expression, Expression) {
+    type Error = EvalError;
+    fn try_from(value: Expression) -> Result<(Expression, Expression), Self::Error> {
+        match value {
             Expression::Cell(a, b) => Ok((*a, *b)),
             _ => Err(EvalError::TypeError(
                 "Expression must be a Cell".to_string(),

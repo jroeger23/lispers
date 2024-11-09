@@ -79,7 +79,7 @@ pub fn prelude_div(env: &Environment, expr: Expression) -> Result<Expression, Ev
 }
 
 pub fn prelude_lambda(_env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [args, body] = expr.try_into()?;
+    let [args, body]: [Expression; 2] = expr.try_into()?;
     let mut arg_exprs: Vec<Expression> = args.try_into()?;
     let argument_symbols: Vec<String> = arg_exprs
         .iter_mut()
