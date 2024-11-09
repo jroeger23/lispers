@@ -1,10 +1,5 @@
 use super::{expression::Expression, prelude::mk_prelude};
-use std::{
-    borrow::BorrowMut,
-    cell::{RefCell, RefMut},
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 #[derive(PartialEq, Clone, Debug)]
 /// A Environment is a stack of `EnvironmentLayer`s. Each `EnvironmentLayer` is a mapping from
