@@ -1,8 +1,5 @@
-mod lisp;
-mod parser;
-use parser::ExpressionStream;
-
-use crate::lisp::{eval, Environment};
+use lispers::lisp::{eval, Environment};
+use lispers::parser::ExpressionStream;
 
 fn main() {
     let programs = [

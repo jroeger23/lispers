@@ -1,9 +1,8 @@
-use lisp::Expression;
-use parser::ParserError;
+use lispers::lisp::Expression;
+use lispers::parser::ParserError;
 
+use lispers::{lisp, parser};
 use std::io::Write;
-mod parser;
-mod lisp;
 
 fn main() {
     let env = lisp::Environment::default();
@@ -18,7 +17,9 @@ fn main() {
             break;
         }
 
-        match parser::ExpressionStream::from_char_stream(input.chars()).collect::<Result<Vec<Expression>, ParserError>>() {
+        match parser::ExpressionStream::from_char_stream(input.chars())
+            .collect::<Result<Vec<Expression>, ParserError>>()
+        {
             Err(e) => println!("Parser Error: {:?}", e),
             Ok(exprs) => {
                 for expr in exprs {
