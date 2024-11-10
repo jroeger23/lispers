@@ -94,6 +94,40 @@ pub fn prelude_lambda(_env: &Environment, expr: Expression) -> Result<Expression
     })
 }
 
+pub fn prelude_defun(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [name, args, body]: [Expression; 3] = expr.try_into()?;
+    let name = match name {
+        Expression::Symbol(s) => s,
+        x => return Err(EvalError::NotASymbol(x)),
+    };
+    let mut arg_exprs: Vec<Expression> = args.try_into()?;
+    let argument_symbols: Vec<String> = arg_exprs
+        .iter_mut()
+        .map(|a| match a.to_owned() {
+            Expression::Symbol(s) => Ok(s),
+            x => Err(EvalError::NotASymbol(x)),
+        })
+        .collect::<Result<Vec<String>, EvalError>>()?;
+
+    let f = Expression::AnonymousFunction {
+        argument_symbols,
+        body: Box::new(body),
+    };
+    env.shared_set(name, f.clone());
+    Ok(f)
+}
+
+pub fn prelude_define(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [name, value] = expr.try_into()?;
+    let name = match name {
+        Expression::Symbol(s) => s,
+        x => return Err(EvalError::NotASymbol(x)),
+    };
+    let value = eval(env, value)?;
+    env.shared_set(name, value.clone());
+    Ok(value)
+}
+
 pub fn prelude_let(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [bindings, body] = expr.try_into()?;
 
@@ -160,7 +194,7 @@ pub fn prelude_gt(env: &Environment, expr: Expression) -> Result<Expression, Eva
 
 pub fn prelude_not(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [a] = expr.try_into()?;
-    match a {
+    match eval(env, a)? {
         Expression::Nil => Ok(Expression::True),
         _ => Ok(Expression::Nil),
     }
@@ -217,6 +251,8 @@ pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("*".to_string(), Expression::Function(prelude_mul));
     layer.set("/".to_string(), Expression::Function(prelude_div));
     layer.set("lambda".to_string(), Expression::Function(prelude_lambda));
+    layer.set("defun".to_string(), Expression::Function(prelude_defun));
+    layer.set("define".to_string(), Expression::Function(prelude_define));
     layer.set("if".to_string(), Expression::Function(prelude_if));
     layer.set("=".to_string(), Expression::Function(prelude_eq));
     layer.set("<".to_string(), Expression::Function(prelude_lt));

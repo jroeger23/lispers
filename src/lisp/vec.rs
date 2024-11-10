@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use as_any::AsAny;
-
 use super::{
     environment::{Environment, EnvironmentLayer},
     eval::{eval, EvalError},
