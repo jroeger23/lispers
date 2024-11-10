@@ -245,6 +245,16 @@ pub fn prelude_eval(env: &Environment, expr: Expression) -> Result<Expression, E
     eval(env, eval(env, e)?)
 }
 
+pub fn prelude_progn(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let mut result = Expression::Nil;
+
+    for e in CellIterator::new(expr) {
+        result = eval(env, e?)?;
+    }
+
+    Ok(result)
+}
+
 pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("+".to_string(), Expression::Function(prelude_add));
     layer.set("-".to_string(), Expression::Function(prelude_sub));
@@ -265,4 +275,5 @@ pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("car".to_string(), Expression::Function(prelude_car));
     layer.set("cdr".to_string(), Expression::Function(prelude_cdr));
     layer.set("eval".to_string(), Expression::Function(prelude_eval));
+    layer.set("progn".to_string(), Expression::Function(prelude_progn));
 }

@@ -103,7 +103,7 @@ pub fn eval(env: &Environment, expr: Expression) -> Result<Expression, EvalError
             a => Err(EvalError::NotAFunction(a)),
         },
         Expression::Quote(e) => Ok(*e),
-        Expression::Symbol(s) => eval(env, env.get(&s).ok_or(EvalError::SymbolNotBound(s))?),
+        Expression::Symbol(s) => env.get(&s).ok_or(EvalError::SymbolNotBound(s)),
         x => Ok(x),
     }
 }
