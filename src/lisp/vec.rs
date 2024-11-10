@@ -64,13 +64,17 @@ impl TryFrom<Expression> for Vec3 {
     }
 }
 
+impl From<Vec3> for Expression {
+    fn from(value: Vec3) -> Self {
+        Expression::ForeignExpression(ForeignDataWrapper::new(Box::new(value)))
+    }
+}
+
 /// Create a vec3 expression from a list of 3 floats
 pub fn vec_vec(_env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [x, y, z]: [f64; 3] = expr.try_into()?;
 
-    Ok(Expression::ForeignExpression(ForeignDataWrapper::new(
-        Box::new(Vec3 { x, y, z }),
-    )))
+    Ok(Vec3 { x, y, z }.into())
 }
 
 /// Add two vec3 expressions
@@ -80,17 +84,60 @@ pub fn vec_add(env: &Environment, expr: Expression) -> Result<Expression, EvalEr
     let a = Vec3::try_from(eval(env, a)?)?;
     let b = Vec3::try_from(eval(env, b)?)?;
 
-    Ok(Expression::ForeignExpression(ForeignDataWrapper::new(
-        Box::new(Vec3 {
-            x: a.x + b.x,
-            y: a.y + b.y,
-            z: a.z + b.z,
-        }),
-    )))
+    Ok(Vec3 {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
+    }
+    .into())
+}
+
+/// Scale a vector by a factor. First argument is the factor, second the vector
+pub fn vec_scale(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a, b]: [Expression; 2] = expr.try_into()?;
+
+    let a = f64::try_from(eval(env, a)?)?;
+    let b = Vec3::try_from(eval(env, b)?)?;
+
+    Ok(Vec3 {
+        x: a * b.x,
+        y: a * b.y,
+        z: a * b.z,
+    }
+    .into())
+}
+
+/// Calculate the dot product of two vec3
+pub fn vec_dot(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [a, b]: [Expression; 2] = expr.try_into()?;
+
+    let a = Vec3::try_from(eval(env, a)?)?;
+    let b = Vec3::try_from(eval(env, b)?)?;
+
+    Ok(Expression::Float(a.x * b.x + a.y * b.y + a.z * b.z))
+}
+
+/// Get the L2-norm of a vector
+pub fn vec_norm(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [arg]: [Expression; 1] = expr.try_into()?;
+
+    let vec = Vec3::try_from(eval(env, arg)?)?;
+
+    let length = (vec.x.powi(2) + vec.y.powi(2) + vec.z.powi(2)).sqrt();
+
+    Ok(Vec3 {
+        x: vec.x / length,
+        y: vec.y / length,
+        z: vec.z / length,
+    }
+    .into())
 }
 
 /// Add vec3 functions to a layer
 pub fn mk_vec3(layer: &mut EnvironmentLayer) {
     layer.set("vec3".to_string(), Expression::Function(vec_vec));
     layer.set("vec3-add".to_string(), Expression::Function(vec_add));
+    layer.set("vec3-scale".to_string(), Expression::Function(vec_scale));
+    layer.set("vec3-dot".to_string(), Expression::Function(vec_dot));
+    layer.set("vec3-norm".to_string(), Expression::Function(vec_norm));
 }

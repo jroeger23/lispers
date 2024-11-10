@@ -129,6 +129,7 @@ impl TryFrom<Expression> for f64 {
     type Error = EvalError;
     fn try_from(value: Expression) -> Result<f64, Self::Error> {
         match value {
+            Expression::Integer(i) => Ok(i as f64),
             Expression::Float(f) => Ok(f),
             _ => Err(EvalError::TypeError(
                 "Expression is not a Float".to_string(),

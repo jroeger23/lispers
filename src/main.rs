@@ -15,7 +15,7 @@ fn main() {
         "pow",
         "(pow 2 10)",
         "(let '((fib . (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))))) (fib 10))",
-        "(vec3-add (vec3 1.0 2.0 3.0) (vec3 4.0 5.0 6.0))",
+        "(let '((a . (vec3 1 2 3)) (b . (vec3 4 5 6))) (vec3-dot (vec3-norm (vec3-add a b)) a))",
     ];
 
     let environment = Environment::default();
