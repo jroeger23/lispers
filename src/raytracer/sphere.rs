@@ -2,10 +2,25 @@ use super::types::{Intersect, Material, Point3, Ray, Scalar, Vector3};
 
 extern crate nalgebra as na;
 
+/// A sphere in 3D space
 pub struct Sphere {
+    /// Center of the sphere
     center: Point3,
+    /// Radius of the sphere
     radius: Scalar,
+    /// PHONG material of the sphere
     material: Material,
+}
+
+impl Sphere {
+    /// Create a new sphere at `center` with `radius` and `material`.
+    pub fn new(center: Point3, radius: Scalar, material: Material) -> Sphere {
+        Sphere {
+            center,
+            radius,
+            material,
+        }
+    }
 }
 
 /// Numerical error tolerance
@@ -35,6 +50,7 @@ impl Intersect for Sphere {
 
             if t < Scalar::MAX {
                 let isect_pt: Point3 = ray.origin + ray.direction * t;
+
                 return Some((
                     isect_pt,
                     (isect_pt - self.center) / self.radius,

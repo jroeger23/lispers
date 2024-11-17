@@ -21,5 +21,6 @@ path = "src/bin/repl.rs"
 [dependencies]
 as-any = "0.3.1"
 futures = "0.3.30"
+image = "0.25.5"
 nalgebra = "0.33.2"
 nix = "0.29.0"

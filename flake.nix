@@ -75,6 +75,10 @@
             type = "app";
             program = "${packages.default}/bin/repl";
           };
+          rt_demo = {
+            type = "app";
+            program = "${packages.default}/bin/rt_demo";
+          };
           default = demo;
         };
 
