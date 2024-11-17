@@ -2,11 +2,15 @@
   description = "Rust-Nix";
 
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay/6bf986d20552384209907fa0d5f3fa9a34d00995";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     crate2nix.url = "github:nix-community/crate2nix";
 
     # Development
@@ -51,8 +55,6 @@
         inputs',
         ...
       }: let
-        # If you dislike IFD, you can also generate it with `crate2nix generate`
-        # on each dependency change and import it here with `import ./Cargo.nix`.
         cargoNix = inputs.crate2nix.tools.${system}.appliedCargoNix {
           name = "rustnix";
           src = ./.;
