@@ -2,21 +2,14 @@
   description = "Rust-Nix";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    flake-parts = {
-      url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
+    nixpkgs.url = "github:NixOS/nixpkgs/24.05";
     rust-overlay = {
-      url = "github:oxalica/rust-overlay/6bf986d20552384209907fa0d5f3fa9a34d00995";
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    crate2nix.url = "github:nix-community/crate2nix";
-
-    # Development
-
-    devshell = {
-      url = "github:numtide/devshell";
+    flake-utils.url = "github:numtide/flake-utils";
+    crate2nix = {
+      url = "github:nix-community/crate2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -28,44 +21,47 @@
   };
 
   outputs = inputs @ {
-    self,
-    nixpkgs,
-    flake-parts,
-    rust-overlay,
     crate2nix,
+    flake-utils,
+    nixpkgs,
+    rust-overlay,
     ...
   }:
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
+    flake-utils.lib.eachDefaultSystem (
+      system: let
+        # Overlay pkgs with rust-bin
+        overlays = [(import rust-overlay)];
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
 
-      imports = [
-        ./nix/rust-overlay/flake-module.nix
-        ./nix/devshell/flake-module.nix
-      ];
+        # Use rust-bin to generate the toolchain from rust-toolchain.toml
+        rust-toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
-      perSystem = {
-        system,
-        pkgs,
-        lib,
-        inputs',
-        ...
-      }: let
-        cargoNix = inputs.crate2nix.tools.${system}.appliedCargoNix {
+        buildRustCrateForPkgs = pkgs:
+          pkgs.buildRustCrate.override {
+            rustc = rust-toolchain; # Use rustc from toolchain
+            cargo = rust-toolchain; # Use cargo from toolchain
+            defaultCrateOverrides =
+              pkgs.defaultCrateOverrides
+              // {
+                # Fix rav1e build.rs:278 error when no CARGO_ENCODED_RUSTFLAGS is set
+                rav1e = attrs: {
+                  CARGO_ENCODED_RUSTFLAGS = "";
+                };
+              };
+          };
+
+        # Cargo.nix for IFD
+        generatedCargoNix = crate2nix.tools.${system}.generatedCargoNix {
           name = "rustnix";
           src = ./.;
         };
-      in rec {
-        checks = {
-          rustnix = cargoNix.rootCrate.build.override {
-            runTests = true;
-          };
-        };
 
+        cargoNix = import generatedCargoNix {
+          inherit pkgs buildRustCrateForPkgs;
+        };
+      in rec {
         apps = rec {
           demo = {
             type = "app";
@@ -81,18 +77,13 @@
           };
           default = demo;
         };
-
-        packages = {
-          rustnix = cargoNix.rootCrate.build;
-          default = packages.rustnix;
-
-          inherit (pkgs) rust-toolchain;
-
-          rust-toolchain-versions = pkgs.writeScriptBin "rust-toolchain-versions" ''
-            ${pkgs.rust-toolchain}/bin/cargo --version
-            ${pkgs.rust-toolchain}/bin/rustc --version
-          '';
+        packages = rec {
+          lispers = cargoNix.rootCrate.build;
+          default = lispers;
         };
-      };
-    };
+        devShell = pkgs.mkShell {
+          buildInputs = [rust-toolchain];
+        };
+      }
+    );
 }
