@@ -513,6 +513,7 @@ dependencies = [
  "image",
  "nalgebra",
  "nix",
+ "rayon",
 ]
 
 [[package]]

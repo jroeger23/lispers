@@ -7,6 +7,7 @@ use super::types::Ray;
 use super::types::Vector3;
 use super::vec::mirror;
 use super::vec::reflect;
+use std::sync::Arc;
 extern crate nalgebra as na;
 
 /// A scene is a collection of objects and lights, and provides a method to trace a ray through the scene.
@@ -14,7 +15,7 @@ pub struct Scene {
     /// The ambient light of the scene
     ambient: Color,
     /// The objects in the scene
-    objects: Vec<Box<dyn Intersect>>,
+    objects: Vec<Arc<dyn Intersect + Send + Sync>>,
     /// The lights in the scene
     lights: Vec<Light>,
 }
@@ -35,7 +36,7 @@ impl Scene {
     }
 
     /// Add an object to the scene
-    pub fn add_object(&mut self, obj: Box<dyn Intersect>) {
+    pub fn add_object(&mut self, obj: Arc<dyn Intersect + Send + Sync>) {
         self.objects.push(obj);
     }
 

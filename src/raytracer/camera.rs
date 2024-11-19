@@ -3,6 +3,7 @@ use super::{
     types::{Color, Point3, Ray, Scalar, Vector3},
 };
 use image::RgbImage;
+use rayon::prelude::*;
 
 /// A camera that can render a scene.
 pub struct Camera {
@@ -77,26 +78,31 @@ impl Camera {
     /// - `subp` is the number of subpixels to use for antialiasing.
     pub fn render(&self, scene: &Scene, depth: u32, subp: u32) -> RgbImage {
         let dx = 1.0 / self.width as Scalar;
-        let dy = 1.0 / self.width as Scalar;
+        let dy = 1.0 / self.height as Scalar;
         let dsx = dx / subp as Scalar;
         let dsy = dy / subp as Scalar;
-        RgbImage::from_fn(self.width as u32, self.height as u32, |x, y| {
-            let x = x as Scalar * dx;
-            let y = y as Scalar * dy;
-            let mut color = Color::new(0.0, 0.0, 0.0);
-            for sx in 0..subp {
-                for sy in 0..subp {
-                    color += scene.trace(
-                        &self.ray_at_relative(
-                            x + sx as Scalar * dsx,
-                            1.0 - (y + sy as Scalar * dsy),
-                        ),
-                        depth,
-                    );
+        let mut img = RgbImage::new(self.width as u32, self.height as u32);
+
+        img.enumerate_rows_mut().par_bridge().for_each(|(_, row)| {
+            for (x, y, pixel) in row {
+                let y = y as Scalar * dy;
+                let x = x as Scalar * dx;
+                let mut color = Color::new(0.0, 0.0, 0.0);
+                for sx in 0..subp {
+                    for sy in 0..subp {
+                        color += scene.trace(
+                            &self.ray_at_relative(
+                                x + sx as Scalar * dsx,
+                                1.0 - (y + sy as Scalar * dsy),
+                            ),
+                            depth,
+                        );
+                    }
                 }
+                color *= 255.0 / (subp * subp) as Scalar;
+                *pixel = [color.x as u8, color.y as u8, color.z as u8].into();
             }
-            color *= 255.0 / (subp * subp) as Scalar;
-            [color.x as u8, color.y as u8, color.z as u8].into()
-        })
+        });
+        img
     }
 }

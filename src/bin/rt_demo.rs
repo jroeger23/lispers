@@ -6,6 +6,7 @@ use lispers::raytracer::{
     types::{Color, Light, Material, Point3, Vector3},
 };
 extern crate nalgebra as na;
+use std::sync::Arc;
 
 fn main() {
     let mut scene = Scene::new();
@@ -21,7 +22,7 @@ fn main() {
         color: Color::new(1.0, 1.0, 1.0),
     });
 
-    scene.add_object(Box::new(Plane::new(
+    scene.add_object(Arc::new(Plane::new(
         Point3::new(0.0, -1.0, 0.0),
         Vector3::new(0.0, 1.0, 0.0),
         Material::new(
@@ -33,7 +34,7 @@ fn main() {
         ),
     )));
 
-    scene.add_object(Box::new(Sphere::new(
+    scene.add_object(Arc::new(Sphere::new(
         Point3::new(-2.0, 0.0, 1.0),
         1.0,
         Material::new(
@@ -45,7 +46,7 @@ fn main() {
         ),
     )));
 
-    scene.add_object(Box::new(Sphere::new(
+    scene.add_object(Arc::new(Sphere::new(
         Point3::new(0.2, -0.5, -0.2),
         0.5,
         Material::new(
@@ -57,7 +58,7 @@ fn main() {
         ),
     )));
 
-    scene.add_object(Box::new(Sphere::new(
+    scene.add_object(Arc::new(Sphere::new(
         Point3::new(-0.5, 0.5, -2.0),
         1.5,
         Material::new(
