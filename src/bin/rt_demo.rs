@@ -7,6 +7,7 @@ use lispers::raytracer::{
 };
 extern crate nalgebra as na;
 use std::sync::Arc;
+use std::time::Instant;
 
 fn main() {
     let mut scene = Scene::new();
@@ -75,13 +76,18 @@ fn main() {
         Point3::new(-1.0, -0.5, 0.0),
         Vector3::new(0.0, 1.0, 0.0),
         60.0,
-        400,
-        300,
+        4 * 256,
+        3 * 256,
     );
 
     let fname = "demo-scene.png";
-    match camera.render(&scene, 5, 2).save(fname) {
-        Ok(_) => println!("Image saved to {}", fname),
+    print!("Rendering demo scene...");
+    let start = Instant::now();
+    match camera.render(&scene, 5, 3).save(fname) {
+        Ok(_) => {
+            println!(" finished ({}s) ", start.elapsed().as_secs_f32());
+            println!("Image saved to {}", fname)
+        }
         Err(e) => println!("Error saving image: {}", e),
     }
 }
