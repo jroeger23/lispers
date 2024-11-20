@@ -94,15 +94,18 @@ impl Scene {
 
         for light in &self.lights {
             // Cast Shadow-Ray
+            let direction = light.position - isect_pt;
+            let distance = direction.norm();
+            let direction = direction / distance;
             let shadow_ray = Ray {
                 origin: isect_pt,
-                direction: (light.position - isect_pt).normalize(),
+                direction,
             };
-            if self
-                .objects
-                .iter()
-                .any(|obj| obj.intersect(&shadow_ray).is_some())
-            {
+            if self.objects.iter().any(|obj| {
+                obj.intersect(&shadow_ray)
+                    .and_then(|(_, _, t, _)| Some(t < distance))
+                    .unwrap_or(false)
+            }) {
                 continue;
             }
 
