@@ -1,5 +1,8 @@
+use std::any::Any;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 use as_any::AsAny;
 
@@ -9,51 +12,110 @@ use super::eval::EvalError;
 
 /// A trait for foreign data types that can be used in lisp expressions.
 /// Note: This trait requires explicit implementation of:
-/// - partial_cmp
-/// - clone_data
-/// - eq
-/// To avoid a derive cycle.
+/// - partial_cmp_impl
+/// - clone_impl
+/// - eq_impl
+/// - as_any_box
+/// to ensure object safety.
 pub trait ForeignData: Debug + Display + AsAny {
-    fn partial_cmp(&self, other: &dyn ForeignData) -> Option<std::cmp::Ordering>;
-    fn clone_data(&self) -> Box<dyn ForeignData>;
-    fn eq(&self, other: &dyn ForeignData) -> bool;
+    fn partial_cmp_impl(&self, other: &dyn ForeignData) -> Option<std::cmp::Ordering>;
+    fn clone_impl(&self) -> Box<dyn ForeignData>;
+    fn eq_impl(&self, other: &dyn ForeignData) -> bool;
+    fn as_any_box(self: Box<Self>) -> Box<dyn Any>;
 }
 
-#[derive(Debug)]
-/// A Wrapper struct for foreign data types injected in expressions.
-pub struct ForeignDataWrapper {
-    /// The actual foreign data.
-    pub data: Box<dyn ForeignData>,
-}
+impl<T: Debug + Display + AsAny + PartialOrd + PartialEq + Clone + 'static> ForeignData for T {
+    fn partial_cmp_impl(&self, other: &dyn ForeignData) -> Option<std::cmp::Ordering> {
+        if let Some(other) = other.as_any().downcast_ref::<T>() {
+            self.partial_cmp(other)
+        } else {
+            None
+        }
+    }
 
-impl ForeignDataWrapper {
-    /// Create a new ForeignDataWrapper from a ForeignData trait object.
-    pub fn new(data: Box<dyn ForeignData>) -> Self {
-        ForeignDataWrapper { data }
+    fn clone_impl(&self) -> Box<dyn ForeignData> {
+        Box::new(self.clone())
+    }
+
+    fn eq_impl(&self, other: &dyn ForeignData) -> bool {
+        if let Some(other) = other.as_any().downcast_ref::<T>() {
+            self.eq(other)
+        } else {
+            false
+        }
+    }
+
+    fn as_any_box(self: Box<Self>) -> Box<dyn Any> {
+        self
     }
 }
 
-impl Clone for ForeignDataWrapper {
+/// A wrapper struct around any foreign data type. This struct is used to convert
+/// any T implementing ForeignData to an Expression and vice versa.
+#[derive(Debug)]
+pub struct ForeignDataWrapper<T: ForeignData>(pub Box<T>);
+impl<T: ForeignData> ForeignDataWrapper<T> {
+    /// Create a new ForeignDataWrapper from an object implementing ForeignData.
+    pub fn new(data: T) -> Self {
+        ForeignDataWrapper(Box::new(data))
+    }
+}
+
+impl<T: ForeignData> Deref for ForeignDataWrapper<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: ForeignData> DerefMut for ForeignDataWrapper<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug)]
+/// A Store struct for foreign data types injected in expressions.
+pub struct ForeignDataStore {
+    /// The actual foreign data.
+    data: Box<dyn ForeignData>,
+}
+
+/// The ForeignDataStore struct is used to store any foreign data type in an Expression
+/// and cannot be constructed outside of this scope.
+impl ForeignDataStore {
+    /// Create a new ForeignDataStore from a ForeignData trait object.
+    fn new(data: Box<dyn ForeignData>) -> Self {
+        ForeignDataStore { data }
+    }
+
+    /// Get the contained box as an Any-Box with type info of the actual data.
+    fn as_any_box(self) -> Box<dyn Any> {
+        self.data.as_any_box()
+    }
+}
+
+impl Clone for ForeignDataStore {
     fn clone(&self) -> Self {
-        ForeignDataWrapper {
-            data: self.data.clone_data(),
+        ForeignDataStore {
+            data: self.data.clone_impl(),
         }
     }
 }
 
-impl PartialEq for ForeignDataWrapper {
+impl PartialEq for ForeignDataStore {
     fn eq(&self, other: &Self) -> bool {
-        self.data.eq(other.data.as_ref())
+        self.data.eq_impl(other.data.as_ref())
     }
 }
 
-impl PartialOrd for ForeignDataWrapper {
+impl PartialOrd for ForeignDataStore {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.data.partial_cmp(other.data.as_ref())
+        self.data.partial_cmp_impl(other.data.as_ref())
     }
 }
 
-impl Display for ForeignDataWrapper {
+impl Display for ForeignDataStore {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.data)
     }
@@ -72,7 +134,7 @@ pub enum Expression {
         body: Box<Expression>,
     },
     /// A foreign data expression.
-    ForeignExpression(ForeignDataWrapper),
+    ForeignExpression(ForeignDataStore),
     /// A Quoted expression.
     Quote(Box<Expression>),
     /// A symbol.
@@ -87,6 +149,29 @@ pub enum Expression {
     True,
     /// Nil
     Nil,
+}
+
+impl<T: ForeignData> From<ForeignDataWrapper<T>> for Expression {
+    fn from(value: ForeignDataWrapper<T>) -> Expression {
+        Expression::ForeignExpression(ForeignDataStore::new(value.0))
+    }
+}
+
+impl<T: ForeignData> TryFrom<Expression> for ForeignDataWrapper<T> {
+    type Error = EvalError;
+    fn try_from(value: Expression) -> Result<Self, Self::Error> {
+        match value {
+            Expression::ForeignExpression(f) => match f.as_any_box().downcast::<T>() {
+                Ok(data) => Ok(ForeignDataWrapper(data)),
+                Err(_) => Err(EvalError::TypeError(
+                    "Expression is not a ForeignDataWrapper".to_string(),
+                )),
+            },
+            _ => Err(EvalError::TypeError(
+                "Expression is not a ForeignDataWrapper".to_string(),
+            )),
+        }
+    }
 }
 
 impl From<fn(&Environment, Expression) -> Result<Expression, EvalError>> for Expression {

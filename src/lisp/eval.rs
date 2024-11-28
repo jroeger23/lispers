@@ -13,6 +13,7 @@ pub enum EvalError {
     ArgumentError(String),
     TypeError(String),
     NotASymbol(Expression),
+    RuntimeError(String),
 }
 
 impl Display for EvalError {
@@ -24,6 +25,7 @@ impl Display for EvalError {
             EvalError::ArgumentError(s) => write!(f, "Argument error: {}", s),
             EvalError::TypeError(s) => write!(f, "Type error: {}", s),
             EvalError::NotASymbol(e) => write!(f, "Expression {} is not a symbol", e),
+            EvalError::RuntimeError(s) => write!(f, "Runtime error: {}", s),
         }
     }
 }

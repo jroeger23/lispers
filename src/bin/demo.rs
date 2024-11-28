@@ -12,7 +12,6 @@ fn main() {
         "pow",
         "(pow 2 10)",
         "(let '((fib . (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))))) (fib 10))",
-        "(let '((a . (vec3 1 2 3)) (b . (vec3 4 5 6))) (vec3-dot (vec3-norm (vec3-add a b)) a))",
         "(defun do-n-times (f n) (if (= n 0) '() (cons (f) (do-n-times f (- n 1)))))",
         "(do-n-times (lambda () (print 'hello)) 5)",
         "(progn (print 'hello) (print 'world))",
