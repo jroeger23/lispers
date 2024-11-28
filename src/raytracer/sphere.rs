@@ -3,6 +3,7 @@ use super::types::{Intersect, Material, Point3, Ray, Scalar, Vector3};
 extern crate nalgebra as na;
 
 /// A sphere in 3D space
+#[derive(PartialEq, Clone, Debug)]
 pub struct Sphere {
     /// Center of the sphere
     center: Point3,
@@ -27,7 +28,7 @@ impl Sphere {
 const EPSILON: Scalar = 1e-5;
 
 impl Intersect for Sphere {
-    fn intersect<'a>(&'a self, ray: &Ray) -> Option<(Point3, Vector3, Scalar, &'a Material)> {
+    fn intersect(&self, ray: &Ray) -> Option<(Point3, Vector3, Scalar, Material)> {
         let co = ray.origin - self.center;
 
         let a = ray.direction.dot(&ray.direction);
@@ -55,11 +56,27 @@ impl Intersect for Sphere {
                     isect_pt,
                     (isect_pt - self.center) / self.radius,
                     t,
-                    &self.material,
+                    self.material.clone(),
                 ));
             }
         }
 
+        None
+    }
+}
+
+impl std::fmt::Display for Sphere {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "(sphere center: {}, radius: {}, material: {})",
+            self.center, self.radius, self.material
+        )
+    }
+}
+
+impl PartialOrd for Sphere {
+    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
         None
     }
 }

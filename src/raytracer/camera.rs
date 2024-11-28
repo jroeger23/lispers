@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::{
     scene::Scene,
     types::{Color, Point3, Ray, Scalar, Vector3},
@@ -6,6 +8,7 @@ use image::RgbImage;
 use rayon::prelude::*;
 
 /// A camera that can render a scene.
+#[derive(Clone, PartialEq, Debug)]
 pub struct Camera {
     /// Position of the camera's eye.
     position: Point3,
@@ -104,5 +107,18 @@ impl Camera {
             }
         });
         img
+    }
+}
+
+impl Display for Camera {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Camera {{ position: {}, lower_left: {}, x_dir: {}, y_dir: {}, width: {}, height: {} }}",
+            self.position, self.lower_left, self.x_dir, self.y_dir, self.width, self.height)
+    }
+}
+
+impl PartialOrd for Camera {
+    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
+        None
     }
 }

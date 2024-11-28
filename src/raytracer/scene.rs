@@ -1,21 +1,24 @@
+use std::fmt::Display;
+
 use super::types::Color;
 use super::types::Intersect;
 use super::types::Light;
 use super::types::Material;
 use super::types::Point3;
+use super::types::RTObjectWrapper;
 use super::types::Ray;
 use super::types::Vector3;
 use super::vec::mirror;
 use super::vec::reflect;
-use std::sync::Arc;
 extern crate nalgebra as na;
 
 /// A scene is a collection of objects and lights, and provides a method to trace a ray through the scene.
+#[derive(Debug, PartialEq, Clone)]
 pub struct Scene {
     /// The ambient light of the scene
     ambient: Color,
     /// The objects in the scene
-    objects: Vec<Arc<dyn Intersect + Send + Sync>>,
+    objects: Vec<RTObjectWrapper>,
     /// The lights in the scene
     lights: Vec<Light>,
 }
@@ -36,7 +39,7 @@ impl Scene {
     }
 
     /// Add an object to the scene
-    pub fn add_object(&mut self, obj: Arc<dyn Intersect + Send + Sync>) {
+    pub fn add_object(&mut self, obj: RTObjectWrapper) {
         self.objects.push(obj);
     }
 
@@ -61,7 +64,7 @@ impl Scene {
         {
             Some((isect_pt, isect_norm, _, material)) => {
                 // Lighting of material at the intersection point
-                let color = self.lighting(-&ray.direction, material, isect_pt, isect_norm);
+                let color = self.lighting(-&ray.direction, &material, isect_pt, isect_norm);
 
                 // Calculate reflections, if the material has mirror properties
                 if material.mirror > 0.0 {
@@ -126,5 +129,23 @@ impl Scene {
         }
 
         color
+    }
+}
+
+impl PartialOrd for Scene {
+    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
+        None
+    }
+}
+
+impl Display for Scene {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "(scene ambient: {}, #objects: {}, #lights: {})",
+            self.ambient,
+            self.objects.len(),
+            self.lights.len()
+        )
     }
 }

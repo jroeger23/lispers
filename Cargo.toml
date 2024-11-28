@@ -1,6 +1,6 @@
 [package]
 name = "lispers"
-description = "lisp interpreter in rust"
+description = "lisp interpreter in rust for raytracing"
 publish = false
 version = "0.1.0"
 
@@ -11,12 +11,16 @@ name = "lispers"
 path = "src/lib.rs"
 
 [[bin]]
-name = "demo"
-path = "src/bin/demo.rs"
+name = "lisp_demo"
+path = "src/bin/lisp_demo.rs"
 
 [[bin]]
 name = "repl"
 path = "src/bin/repl.rs"
+
+[[bin]]
+name = "rt_lisp_demo"
+path = "src/bin/rt_lisp_demo.rs"
 
 [dependencies]
 as-any = "0.3.1"

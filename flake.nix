@@ -63,9 +63,9 @@
         };
       in rec {
         apps = rec {
-          demo = {
+          lisp_demo = {
             type = "app";
-            program = "${packages.default}/bin/demo";
+            program = "${packages.default}/bin/lisp_demo";
           };
           repl = {
             type = "app";
@@ -75,7 +75,11 @@
             type = "app";
             program = "${packages.default}/bin/rt_demo";
           };
-          default = demo;
+          rt_demo_lisp = {
+            type = "app";
+            program = "${packages.default}/bin/rt_demo_lisp";
+          };
+          default = rt_demo_lisp;
         };
         packages = rec {
           lispers = cargoNix.rootCrate.build;
