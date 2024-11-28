@@ -77,7 +77,7 @@
           };
           rt_demo_lisp = {
             type = "app";
-            program = "${packages.default}/bin/rt_demo_lisp";
+            program = "${packages.default}/bin/rt_lisp_demo";
           };
           default = rt_demo_lisp;
         };
