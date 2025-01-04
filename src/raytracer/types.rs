@@ -219,7 +219,7 @@ impl PartialOrd for RTObjectWrapper {
 #[test]
 fn test_rt_wrapper_expr_conversion() {
     use super::sphere::Sphere;
-    use crate::lisp::expression::{Expression, ForeignDataWrapper};
+    use lispers_core::lisp::expression::{Expression, ForeignDataWrapper};
     let sphere = Sphere::new(
         Point3::new(0.0, 0.0, 0.0),
         1.0,

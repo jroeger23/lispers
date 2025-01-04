@@ -1,11 +1,12 @@
-use lispers::lisp::environment::EnvironmentLayer;
-use lispers::lisp::prelude::mk_prelude;
-use lispers::lisp::{eval, Environment};
-use lispers::parser::ExpressionStream;
 use lispers::raytracer::lisp::mk_raytrace;
+use lispers_core::lisp::environment::EnvironmentLayer;
+use lispers_core::lisp::prelude::mk_prelude;
+use lispers_core::lisp::{eval, Environment};
+use lispers_core::parser::ExpressionStream;
 
 fn main() {
     let programs = [
+        "(vadd (vector 1 2 3) (vector 4 5 6))",
         "(set 'blue (material (color 0 0 1) (color 0 0 1) (color 0 0 0.6) 50 0.25))",
         "(set 'green (material (color 0 1 0) (color 0 1 0) (color 0 0.6 0) 50 0.25))",
         "(set 'white (material (color 1 1 1) (color 1 1 1) (color 0.6 0.6 0.6) 100 0.5))",

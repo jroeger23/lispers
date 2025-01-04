@@ -1,5 +1,5 @@
-use lispers::lisp::{eval, Environment};
-use lispers::parser::ExpressionStream;
+use lispers_core::lisp::{eval, Environment};
+use lispers_core::parser::ExpressionStream;
 
 fn main() {
     let programs = [

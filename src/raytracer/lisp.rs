@@ -1,11 +1,12 @@
-use crate::{
-    lisp::{
-        environment::EnvironmentLayer,
-        eval::{eval, EvalError},
-        expression::ForeignDataWrapper,
-        Environment, Expression,
-    },
-    raytracer::{scene::Scene, types::Light},
+use crate::raytracer::{scene::Scene, types::Light};
+
+use lispers_macro::native_lisp_function;
+
+use lispers_core::lisp::{
+    environment::EnvironmentLayer,
+    eval::{eval, EvalError},
+    expression::ForeignDataWrapper,
+    Environment, Expression,
 };
 
 use super::{
@@ -199,6 +200,14 @@ pub fn render(env: &Environment, expr: Expression) -> Result<Expression, EvalErr
     }
 }
 
+#[native_lisp_function(fname = vadd, eval)]
+pub fn vadd_vv(
+    a: ForeignDataWrapper<Vector3>,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a + *b))
+}
+
 /// Adds the raytracing functions to the given environment layer.
 pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     layer.set("point".to_string(), Expression::Function(point));
@@ -223,4 +232,5 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     );
     layer.set("camera".to_string(), Expression::Function(camera));
     layer.set("render".to_string(), Expression::Function(render));
+    layer.set("vadd".to_string(), Expression::Function(vadd));
 }

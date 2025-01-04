@@ -1,7 +1,7 @@
-use lispers::lisp::Expression;
-use lispers::parser::ParserError;
+use lispers_core::lisp::Expression;
+use lispers_core::parser::ParserError;
 
-use lispers::{lisp, parser};
+use lispers_core::{lisp, parser};
 use std::io::Write;
 
 fn main() {

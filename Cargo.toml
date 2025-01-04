@@ -22,10 +22,20 @@ path = "src/bin/repl.rs"
 name = "rt_lisp_demo"
 path = "src/bin/rt_lisp_demo.rs"
 
-[dependencies]
+[workspace]
+members = [ "lispers-core", "lispers-macro"]
+
+[workspace.dependencies]
+lispers-core = {path = "lispers-core"}
+lispers-macro = {path = "lispers-macro"}
 as-any = "0.3.1"
+
+[dependencies]
+as-any = {workspace = true}
 futures = "0.3.30"
 image = "0.25.5"
 nalgebra = "0.33.2"
 nix = "0.29.0"
 rayon = "1.10.0"
+lispers-core = {workspace = true}
+lispers-macro = {workspace = true}
