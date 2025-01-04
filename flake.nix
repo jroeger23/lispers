@@ -82,7 +82,7 @@
           default = rt_demo_lisp;
         };
         packages = rec {
-          lispers = cargoNix.rootCrate.build;
+          lispers = cargoNix.workspaceMembers.lispers.build;
           default = lispers;
         };
         devShell = pkgs.mkShell {
