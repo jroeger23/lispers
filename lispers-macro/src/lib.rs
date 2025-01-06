@@ -21,16 +21,16 @@ impl syn::parse::Parse for FlagOrKV {
     }
 }
 
-struct Attrs {
+struct NativeLispAttrs {
     pub eval: bool,
     pub fname: Option<Ident>,
 }
 
-impl syn::parse::Parse for Attrs {
+impl syn::parse::Parse for NativeLispAttrs {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let exprs = Punctuated::<FlagOrKV, Token![,]>::parse_terminated(input)?;
 
-        let mut ret = Attrs {
+        let mut ret = NativeLispAttrs {
             eval: false,
             fname: None,
         };
@@ -58,6 +58,47 @@ impl syn::parse::Parse for Attrs {
     }
 }
 
+struct NativeLispProxyAttrs {
+    pub eval: bool,
+    pub fname: Ident,
+    pub dispatcher: Vec<Ident>,
+}
+
+impl syn::parse::Parse for NativeLispProxyAttrs {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let exprs = Punctuated::<FlagOrKV, Token![,]>::parse_terminated(input)?;
+
+        let mut ret = NativeLispProxyAttrs {
+            eval: false,
+            fname: Ident::new("proxy", proc_macro2::Span::call_site()),
+            dispatcher: Vec::new(),
+        };
+
+        for e in exprs {
+            match e {
+                FlagOrKV::Flag(flag) => {
+                    if flag.to_string() == "eval" {
+                        ret.eval = true;
+                    } else {
+                        return Err(syn::Error::new_spanned(flag, "Unknown flag"));
+                    }
+                }
+                FlagOrKV::KV(k, v) => {
+                    if k.to_string() == "dispatch" {
+                        ret.dispatcher.push(v);
+                    } else if k.to_string() == "fname" {
+                        ret.fname = v;
+                    } else {
+                        return Err(syn::Error::new_spanned(k, "Unknown key"));
+                    }
+                }
+            }
+        }
+
+        Ok(ret)
+    }
+}
+
 #[proc_macro_attribute]
 pub fn native_lisp_function(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Parse function
@@ -69,7 +110,7 @@ pub fn native_lisp_function(attr: TokenStream, item: TokenStream) -> TokenStream
     let ret = &sig.output;
 
     // Parse attrs
-    let attr = parse_macro_input!(attr as Attrs);
+    let attr = parse_macro_input!(attr as NativeLispAttrs);
 
     // Extract argument conversion statements
     let mut conversion_statements = Vec::new();
@@ -77,15 +118,14 @@ pub fn native_lisp_function(attr: TokenStream, item: TokenStream) -> TokenStream
     for arg in &sig.inputs {
         if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
             if let Pat::Ident(ident) = pat.as_ref() {
-                let arg_name = &ident.ident;
-                let arg_name_str = arg_name.to_string();
+                let arg_name_str = ident.ident.to_string();
                 if attr.eval {
                     conversion_statements.push(quote! {
-                        let #arg_name: #ty = eval(env, args_iter.next().ok_or(EvalError::ArgumentError(format!("Missing Argument {}", #arg_name_str)))?)?.try_into()?;
+                        let #ident: #ty = eval(env, args_iter.next().ok_or(EvalError::ArgumentError(format!("Missing Argument {}", #arg_name_str)))?)?.try_into()?;
                     });
                 } else {
                     conversion_statements.push(quote! {
-                        let #arg_name: #ty = args_iter.next().ok_or(EvalError::ArgumentError(format!("Missing Argument {}", #arg_name_str)))?.try_into()?;
+                        let #ident: #ty = args_iter.next().ok_or(EvalError::ArgumentError(format!("Missing Argument {}", #arg_name_str)))?.try_into()?;
                     });
                 }
             }
@@ -97,7 +137,7 @@ pub fn native_lisp_function(attr: TokenStream, item: TokenStream) -> TokenStream
         None => func_name.clone(),
     };
 
-    let gen = quote! {
+    quote! {
         #vis fn #func_name(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
             let args: Vec<Expression> = expr.try_into()?;
             let mut args_iter = args.into_iter();
@@ -106,9 +146,47 @@ pub fn native_lisp_function(attr: TokenStream, item: TokenStream) -> TokenStream
 
             Ok((|| #ret #block)()?.into())
         }
+    }
+    .into()
+}
+
+#[proc_macro]
+pub fn native_lisp_function_proxy(item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(item as NativeLispProxyAttrs);
+    let fname = &args.fname;
+
+    let eval_statement = if args.eval {
+        quote! {
+            let exprs: Vec<Expression> = expr.try_into()?;
+            let exprs = exprs.into_iter().map(|expr| eval(env, expr)).collect::<Result<Vec<Expression>, EvalError>>()?;
+            let expr: Expression = exprs.into();
+        }
+    } else {
+        quote! {}
     };
 
-    let out: TokenStream = gen.into();
-    print!("{}", out);
-    out
+    let try_apply_statements = args
+        .dispatcher
+        .iter()
+        .map(|impl_name| {
+            quote! {
+                match #impl_name(env, expr.clone()) {
+                    Err(EvalError::ArgumentError(e)) => {/*Pass*/},
+                    Err(EvalError::TypeError(e)) => {/*Pass*/},
+                    x => return x,
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    quote! {
+        fn #fname(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+            #eval_statement
+
+            #(#try_apply_statements)*
+
+            Err(EvalError::TypeError("No applicable method found".to_string()))
+        }
+    }
+    .into()
 }

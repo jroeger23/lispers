@@ -1,6 +1,6 @@
 use crate::raytracer::{scene::Scene, types::Light};
 
-use lispers_macro::native_lisp_function;
+use lispers_macro::{native_lisp_function, native_lisp_function_proxy};
 
 use lispers_core::lisp::{
     environment::EnvironmentLayer,
@@ -16,110 +16,72 @@ use super::{
     types::{Color, Material, Point3, RTObjectWrapper, Vector3},
 };
 
-pub fn point(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [x, y, z]: [Expression; 3] = expr.try_into()?;
-
-    let x: f64 = eval(env, x)?.try_into()?;
-    let y: f64 = eval(env, y)?.try_into()?;
-    let z: f64 = eval(env, z)?.try_into()?;
-
-    Ok(ForeignDataWrapper::new(Point3::new(x, y, z)).into())
+#[native_lisp_function(eval)]
+pub fn point(x: f64, y: f64, z: f64) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(Point3::new(x, y, z)))
 }
 
-pub fn vector(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [x, y, z]: [Expression; 3] = expr.try_into()?;
-
-    let x: f64 = eval(env, x)?.try_into()?;
-    let y: f64 = eval(env, y)?.try_into()?;
-    let z: f64 = eval(env, z)?.try_into()?;
-
-    Ok(ForeignDataWrapper::new(Vector3::new(x, y, z)).into())
+#[native_lisp_function(eval)]
+pub fn vector(x: f64, y: f64, z: f64) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(Vector3::new(x, y, z)))
 }
 
-pub fn color(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [r, g, b]: [Expression; 3] = expr.try_into()?;
-
-    let r: f64 = eval(env, r)?.try_into()?;
-    let g: f64 = eval(env, g)?.try_into()?;
-    let b: f64 = eval(env, b)?.try_into()?;
-
-    Ok(ForeignDataWrapper::new(Color::new(r, g, b)).into())
+#[native_lisp_function(eval)]
+pub fn color(r: f64, g: f64, b: f64) -> Result<ForeignDataWrapper<Color>, EvalError> {
+    Ok(ForeignDataWrapper::new(Color::new(r, g, b)))
 }
 
-pub fn light(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [pos, col]: [Expression; 2] = expr.try_into()?;
-
-    let pos: ForeignDataWrapper<Point3> = eval(env, pos)?.try_into()?;
-    let col: ForeignDataWrapper<Color> = eval(env, col)?.try_into()?;
-
-    let pos: Point3 = *pos;
-    let col: Color = *col;
-
-    Ok(ForeignDataWrapper::new(Light::new(pos, col)).into())
+#[native_lisp_function(eval)]
+pub fn light(
+    pos: ForeignDataWrapper<Point3>,
+    col: ForeignDataWrapper<Color>,
+) -> Result<ForeignDataWrapper<Light>, EvalError> {
+    Ok(ForeignDataWrapper::new(Light::new(*pos, *col)))
 }
 
-pub fn material(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [amb, dif, spe, shi, mir]: [Expression; 5] = expr.try_into()?;
-
-    let amb: ForeignDataWrapper<Color> = eval(env, amb)?.try_into()?;
-    let dif: ForeignDataWrapper<Color> = eval(env, dif)?.try_into()?;
-    let spe: ForeignDataWrapper<Color> = eval(env, spe)?.try_into()?;
-    let shi: f64 = eval(env, shi)?.try_into()?;
-    let mir: f64 = eval(env, mir)?.try_into()?;
-
-    let amb: Color = *amb;
-    let dif: Color = *dif;
-    let spe: Color = *spe;
-
-    Ok(ForeignDataWrapper::new(Material::new(amb, dif, spe, shi, mir)).into())
+#[native_lisp_function(eval)]
+pub fn material(
+    amb: ForeignDataWrapper<Color>,
+    dif: ForeignDataWrapper<Color>,
+    spe: ForeignDataWrapper<Color>,
+    shi: f64,
+    mir: f64,
+) -> Result<ForeignDataWrapper<Material>, EvalError> {
+    Ok(ForeignDataWrapper::new(Material::new(
+        *amb, *dif, *spe, shi, mir,
+    )))
 }
 
-pub fn sphere(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [pos, rad, mat]: [Expression; 3] = expr.try_into()?;
-
-    let pos: ForeignDataWrapper<Point3> = eval(env, pos)?.try_into()?;
-    let rad: f64 = eval(env, rad)?.try_into()?;
-    let mat: ForeignDataWrapper<Material> = eval(env, mat)?.try_into()?;
-
-    let pos: Point3 = *pos;
-    let mat: Material = *mat;
-
-    Ok(ForeignDataWrapper::new(RTObjectWrapper::from(Sphere::new(pos, rad, mat))).into())
+#[native_lisp_function(eval)]
+pub fn sphere(
+    pos: ForeignDataWrapper<Point3>,
+    rad: f64,
+    mat: ForeignDataWrapper<Material>,
+) -> Result<ForeignDataWrapper<RTObjectWrapper>, EvalError> {
+    Ok(ForeignDataWrapper::new(RTObjectWrapper::from(Sphere::new(*pos, rad, *mat))).into())
 }
 
-pub fn plane(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [pos, dir, mat]: [Expression; 3] = expr.try_into()?;
-
-    let pos: ForeignDataWrapper<Point3> = eval(env, pos)?.try_into()?;
-    let dir: ForeignDataWrapper<Vector3> = eval(env, dir)?.try_into()?;
-    let mat: ForeignDataWrapper<Material> = eval(env, mat)?.try_into()?;
-
-    let pos: Point3 = *pos;
-    let dir: Vector3 = *dir;
-    let mat: Material = *mat;
-
-    Ok(ForeignDataWrapper::new(RTObjectWrapper::from(Plane::new(pos, dir, mat))).into())
+#[native_lisp_function(eval)]
+pub fn plane(
+    pos: ForeignDataWrapper<Point3>,
+    dir: ForeignDataWrapper<Vector3>,
+    mat: ForeignDataWrapper<Material>,
+) -> Result<ForeignDataWrapper<RTObjectWrapper>, EvalError> {
+    Ok(ForeignDataWrapper::new(RTObjectWrapper::from(Plane::new(*pos, *dir, *mat))).into())
 }
 
-pub fn checkerboard(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [pos, norm, mat1, mat2, sca, up]: [Expression; 6] = expr.try_into()?;
-
-    let pos: ForeignDataWrapper<Point3> = eval(env, pos)?.try_into()?;
-    let norm: ForeignDataWrapper<Vector3> = eval(env, norm)?.try_into()?;
-    let mat1: ForeignDataWrapper<Material> = eval(env, mat1)?.try_into()?;
-    let mat2: ForeignDataWrapper<Material> = eval(env, mat2)?.try_into()?;
-    let sca: f64 = eval(env, sca)?.try_into()?;
-    let up: ForeignDataWrapper<Vector3> = eval(env, up)?.try_into()?;
-
-    let pos: Point3 = *pos;
-    let norm: Vector3 = *norm;
-    let mat1: Material = *mat1;
-    let mat2: Material = *mat2;
-    let up: Vector3 = *up;
-
+#[native_lisp_function(eval)]
+pub fn checkerboard(
+    pos: ForeignDataWrapper<Point3>,
+    norm: ForeignDataWrapper<Vector3>,
+    mat1: ForeignDataWrapper<Material>,
+    mat2: ForeignDataWrapper<Material>,
+    sca: f64,
+    up: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<RTObjectWrapper>, EvalError> {
     Ok(
         ForeignDataWrapper::new(RTObjectWrapper::from(Checkerboard::new(
-            pos, norm, mat1, mat2, sca, up,
+            *pos, *norm, *mat1, *mat2, sca, *up,
         )))
         .into(),
     )
@@ -147,50 +109,53 @@ pub fn scene(env: &Environment, expr: Expression) -> Result<Expression, EvalErro
     Ok(ForeignDataWrapper::new(scene).into())
 }
 
-pub fn scene_add_object(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [sce, obj]: [Expression; 2] = expr.try_into()?;
-
-    let mut sce: ForeignDataWrapper<Scene> = eval(env, sce)?.try_into()?;
-    let obj: ForeignDataWrapper<RTObjectWrapper> = eval(env, obj)?.try_into()?;
-
+#[native_lisp_function]
+pub fn scene_add_object(
+    mut sce: ForeignDataWrapper<Scene>,
+    obj: ForeignDataWrapper<RTObjectWrapper>,
+) -> Result<ForeignDataWrapper<Scene>, EvalError> {
     sce.add_object(obj.clone());
-
-    Ok(sce.into())
+    Ok(sce)
 }
 
-pub fn scene_add_light(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [sce, lgt]: [Expression; 2] = expr.try_into()?;
-
-    let mut sce: ForeignDataWrapper<Scene> = eval(env, sce)?.try_into()?;
-    let lgt: ForeignDataWrapper<Light> = eval(env, lgt)?.try_into()?;
-
+#[native_lisp_function]
+pub fn scene_add_light(
+    mut sce: ForeignDataWrapper<Scene>,
+    lgt: ForeignDataWrapper<Light>,
+) -> Result<ForeignDataWrapper<Scene>, EvalError> {
     sce.add_light(*lgt);
-
-    Ok(sce.into())
+    Ok(sce)
 }
 
-pub fn camera(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [pos, cnt, up, fovy, w, h]: [Expression; 6] = expr.try_into()?;
+native_lisp_function_proxy!(
+    fname = scene_add,
+    eval,
+    dispatch = scene_add_object,
+    dispatch = scene_add_light
+);
 
-    let pos: ForeignDataWrapper<Point3> = eval(env, pos)?.try_into()?;
-    let cnt: ForeignDataWrapper<Point3> = eval(env, cnt)?.try_into()?;
-    let up: ForeignDataWrapper<Vector3> = eval(env, up)?.try_into()?;
-    let fovy: f64 = eval(env, fovy)?.try_into()?;
-    let w: i64 = eval(env, w)?.try_into()?;
-    let h: i64 = eval(env, h)?.try_into()?;
-
-    Ok(ForeignDataWrapper::new(Camera::new(*pos, *cnt, *up, fovy, w as usize, h as usize)).into())
+#[native_lisp_function(eval)]
+pub fn camera(
+    pos: ForeignDataWrapper<Point3>,
+    cnt: ForeignDataWrapper<Point3>,
+    up: ForeignDataWrapper<Vector3>,
+    fovy: f64,
+    w: i64,
+    h: i64,
+) -> Result<ForeignDataWrapper<Camera>, EvalError> {
+    Ok(ForeignDataWrapper::new(Camera::new(
+        *pos, *cnt, *up, fovy, w as usize, h as usize,
+    )))
 }
 
-pub fn render(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [cam, sce, dpt, sbp, out]: [Expression; 5] = expr.try_into()?;
-
-    let cam: ForeignDataWrapper<Camera> = eval(env, cam)?.try_into()?;
-    let sce: ForeignDataWrapper<Scene> = eval(env, sce)?.try_into()?;
-    let dpt: i64 = eval(env, dpt)?.try_into()?;
-    let sbp: i64 = eval(env, sbp)?.try_into()?;
-    let out: String = eval(env, out)?.try_into()?;
-
+#[native_lisp_function(eval)]
+pub fn render(
+    cam: ForeignDataWrapper<Camera>,
+    sce: ForeignDataWrapper<Scene>,
+    dpt: i64,
+    sbp: i64,
+    out: String,
+) -> Result<Expression, EvalError> {
     println!("Rendering to {}...", out);
     let img = cam.render(&sce, dpt as u32, sbp as u32);
 
@@ -200,13 +165,87 @@ pub fn render(env: &Environment, expr: Expression) -> Result<Expression, EvalErr
     }
 }
 
-#[native_lisp_function(fname = vadd, eval)]
+#[native_lisp_function]
 pub fn vadd_vv(
     a: ForeignDataWrapper<Vector3>,
     b: ForeignDataWrapper<Vector3>,
 ) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
     Ok(ForeignDataWrapper::new(*a + *b))
 }
+
+#[native_lisp_function]
+pub fn vadd_vp(
+    a: ForeignDataWrapper<Vector3>,
+    b: ForeignDataWrapper<Point3>,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*b + *a))
+}
+
+#[native_lisp_function]
+pub fn vadd_pv(
+    a: ForeignDataWrapper<Point3>,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a + *b))
+}
+
+native_lisp_function_proxy!(
+    fname = vadd,
+    eval,
+    dispatch = vadd_vv,
+    dispatch = vadd_vp,
+    dispatch = vadd_pv
+);
+
+#[native_lisp_function]
+pub fn vsub_vv(
+    a: ForeignDataWrapper<Vector3>,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a - *b))
+}
+
+#[native_lisp_function]
+pub fn vsub_vp(
+    a: ForeignDataWrapper<Vector3>,
+    b: ForeignDataWrapper<Point3>,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*b - *a))
+}
+
+#[native_lisp_function]
+pub fn vsub_pv(
+    a: ForeignDataWrapper<Point3>,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a - *b))
+}
+
+native_lisp_function_proxy!(
+    fname = vsub,
+    eval,
+    dispatch = vsub_vv,
+    dispatch = vsub_vp,
+    dispatch = vsub_pv
+);
+
+#[native_lisp_function]
+pub fn vmul_vs(
+    a: ForeignDataWrapper<Vector3>,
+    b: f64,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a * b))
+}
+
+#[native_lisp_function]
+pub fn vmul_sv(
+    a: f64,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*b * a))
+}
+
+native_lisp_function_proxy!(fname = vmul, eval, dispatch = vmul_vs, dispatch = vmul_sv);
 
 /// Adds the raytracing functions to the given environment layer.
 pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
@@ -233,4 +272,6 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     layer.set("camera".to_string(), Expression::Function(camera));
     layer.set("render".to_string(), Expression::Function(render));
     layer.set("vadd".to_string(), Expression::Function(vadd));
+    layer.set("vsub".to_string(), Expression::Function(vsub));
+    layer.set("vmul".to_string(), Expression::Function(vmul));
 }
