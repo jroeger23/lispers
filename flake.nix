@@ -79,6 +79,10 @@
             type = "app";
             program = "${packages.default}/bin/rt_lisp_demo";
           };
+          rt_interp = {
+            type = "app";
+            program = "${packages.default}/bin/rt_interp";
+          };
           default = rt_demo_lisp;
         };
         packages = rec {
