@@ -198,6 +198,34 @@ impl From<(Expression, Expression)> for Expression {
     }
 }
 
+impl From<i64> for Expression {
+    fn from(value: i64) -> Self {
+        Expression::Integer(value)
+    }
+}
+
+impl From<f64> for Expression {
+    fn from(value: f64) -> Self {
+        Expression::Float(value)
+    }
+}
+
+impl From<String> for Expression {
+    fn from(value: String) -> Self {
+        Expression::String(value)
+    }
+}
+
+impl From<bool> for Expression {
+    fn from(value: bool) -> Self {
+        if value {
+            Expression::True
+        } else {
+            Expression::Nil
+        }
+    }
+}
+
 impl TryFrom<Expression> for i64 {
     type Error = EvalError;
     fn try_from(value: Expression) -> Result<i64, Self::Error> {
@@ -321,7 +349,7 @@ impl Display for Expression {
             Expression::Symbol(s) => write!(f, "{}", s),
             Expression::Integer(i) => write!(f, "{}", i),
             Expression::Float(fl) => write!(f, "{}", fl),
-            Expression::String(s) => write!(f, "\"{}\"", s),
+            Expression::String(s) => write!(f, "{}", s),
             Expression::True => write!(f, "true"),
             Expression::Nil => write!(f, "nil"),
         }

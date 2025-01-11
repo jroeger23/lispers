@@ -213,10 +213,17 @@ pub fn prelude_set(env: &Environment, expr: Expression) -> Result<Expression, Ev
     }
 }
 
+pub fn prelude_println(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [e] = expr.try_into()?;
+    let e = eval(env, e)?;
+    println!("{}", e);
+    Ok(e)
+}
+
 pub fn prelude_print(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [e] = expr.try_into()?;
     let e = eval(env, e)?;
-    println!("Prelude: {}", e);
+    print!("{}", e);
     Ok(e)
 }
 
@@ -270,6 +277,7 @@ pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("not".to_string(), Expression::Function(prelude_not));
     layer.set("let".to_string(), Expression::Function(prelude_let));
     layer.set("set".to_string(), Expression::Function(prelude_set));
+    layer.set("println".to_string(), Expression::Function(prelude_println));
     layer.set("print".to_string(), Expression::Function(prelude_print));
     layer.set("cons".to_string(), Expression::Function(prelude_cons));
     layer.set("car".to_string(), Expression::Function(prelude_car));
