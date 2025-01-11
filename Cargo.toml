@@ -22,6 +22,10 @@ path = "src/bin/repl.rs"
 name = "rt_lisp_demo"
 path = "src/bin/rt_lisp_demo.rs"
 
+[[bin]]
+name = "rt_interp"
+path = "src/bin/rt_interp.rs"
+
 [workspace]
 members = [ "lispers-core", "lispers-macro"]
 
