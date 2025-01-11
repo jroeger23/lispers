@@ -165,6 +165,16 @@ pub fn render(
     }
 }
 
+#[native_lisp_function(eval)]
+pub fn sin(x: f64) -> Result<f64, EvalError> {
+    Ok(x.sin())
+}
+
+#[native_lisp_function(eval)]
+pub fn cos(x: f64) -> Result<f64, EvalError> {
+    Ok(x.cos())
+}
+
 #[native_lisp_function]
 pub fn vadd_vv(
     a: ForeignDataWrapper<Vector3>,
@@ -261,16 +271,11 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     );
     layer.set("sphere".to_string(), Expression::Function(sphere));
     layer.set("scene".to_string(), Expression::Function(scene));
-    layer.set(
-        "scene-add-object".to_string(),
-        Expression::Function(scene_add_object),
-    );
-    layer.set(
-        "scene-add-light".to_string(),
-        Expression::Function(scene_add_light),
-    );
+    layer.set("scene-add".to_string(), Expression::Function(scene_add));
     layer.set("camera".to_string(), Expression::Function(camera));
     layer.set("render".to_string(), Expression::Function(render));
+    layer.set("sin".to_string(), Expression::Function(sin));
+    layer.set("cos".to_string(), Expression::Function(cos));
     layer.set("vadd".to_string(), Expression::Function(vadd));
     layer.set("vsub".to_string(), Expression::Function(vsub));
     layer.set("vmul".to_string(), Expression::Function(vmul));
