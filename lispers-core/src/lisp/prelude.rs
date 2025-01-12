@@ -262,6 +262,69 @@ pub fn prelude_progn(env: &Environment, expr: Expression) -> Result<Expression, 
     Ok(result)
 }
 
+pub fn prelude_list(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let exprs: Vec<Expression> = expr.try_into()?;
+
+    let evaled_exprs: Vec<_> = exprs
+        .iter()
+        .map(|e| eval(env, e.to_owned()))
+        .collect::<Result<_, _>>()?;
+
+    Ok(evaled_exprs.into())
+}
+
+pub fn prelude_append(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let exprs: Vec<Expression> = expr.try_into()?;
+
+    let evaled_exprs: Vec<_> = exprs
+        .iter()
+        .map(|e| eval(env, e.to_owned())?.try_into())
+        .collect::<Result<Vec<Vec<Expression>>, _>>()?;
+
+    Ok(evaled_exprs.concat().into())
+}
+
+pub fn prelude_concat(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let exprs: Vec<Expression> = expr.try_into()?;
+
+    let evaled_exprs: Vec<String> = exprs
+        .iter()
+        .map(|e| eval(env, e.to_owned())?.try_into())
+        .collect::<Result<_, _>>()?;
+
+    Ok(evaled_exprs.concat().into())
+}
+
+pub fn prelude_map(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [f, list]: [Expression; 2] = expr.try_into()?;
+
+    let f = eval(env, f)?;
+    let list: Vec<Expression> = eval(env, list)?.try_into()?;
+
+    let list: Vec<Expression> = list
+        .iter()
+        .map(|e| {
+            eval(
+                env,
+                Expression::Cell(
+                    Box::new(f.clone()),
+                    Box::new(Expression::Cell(
+                        Box::new(e.to_owned()),
+                        Box::new(Expression::Nil),
+                    )),
+                ),
+            )
+        })
+        .collect::<Result<_, _>>()?;
+
+    Ok(list.into())
+}
+
+pub fn prelude_to_string(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [e] = expr.try_into()?;
+    Ok(Expression::String(format!("{}", eval(env, e)?)))
+}
+
 pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("+".to_string(), Expression::Function(prelude_add));
     layer.set("-".to_string(), Expression::Function(prelude_sub));
@@ -284,4 +347,12 @@ pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("cdr".to_string(), Expression::Function(prelude_cdr));
     layer.set("eval".to_string(), Expression::Function(prelude_eval));
     layer.set("progn".to_string(), Expression::Function(prelude_progn));
+    layer.set("list".to_string(), Expression::Function(prelude_list));
+    layer.set("append".to_string(), Expression::Function(prelude_append));
+    layer.set("concat".to_string(), Expression::Function(prelude_concat));
+    layer.set("map".to_string(), Expression::Function(prelude_map));
+    layer.set(
+        "to-string".to_string(),
+        Expression::Function(prelude_to_string),
+    );
 }
