@@ -3,38 +3,34 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    flake-utils.url = "github:numtide/flake-utils";
     crate2nix = {
       url = "github:nix-community/crate2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  nixConfig = {
-    extra-trusted-public-keys = "eigenvalue.cachix.org-1:ykerQDDa55PGxU25CETy9wF6uVDpadGGXYrFNJA3TUs=";
-    extra-substituters = "https://eigenvalue.cachix.org";
-    allow-import-from-derivation = true;
-  };
-
-  outputs = {
-    crate2nix,
-    flake-utils,
-    nixpkgs,
+  outputs = inputs @ {
+    flake-parts,
     rust-overlay,
+    crate2nix,
     ...
   }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        # Overlay pkgs with rust-bin
-        overlays = [(import rust-overlay)];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-        };
+    flake-parts.lib.mkFlake {inherit inputs;} (top: {
+      systems = [
+        "x86_64-linux"
+      ];
 
+      perSystem = {
+        self',
+        pkgs,
+        system,
+        ...
+      }: let
         # Use rust-bin to generate the toolchain from rust-toolchain.toml
         rust-toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
@@ -77,37 +73,41 @@
         cargoNix = import generatedCargoNix {
           inherit pkgs buildRustCrateForPkgs;
         };
-      in rec {
-        apps = rec {
+      in {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [rust-overlay.overlays.default];
+        };
+
+        packages.lispers = cargoNix.workspaceMembers.lispers.build;
+        packages.default = self'.packages.lispers;
+        apps = {
           lisp_demo = {
             type = "app";
-            program = "${packages.default}/bin/lisp_demo";
+            program = "${self'.packages.lispers}/bin/lisp_demo";
           };
           repl = {
             type = "app";
-            program = "${packages.default}/bin/repl";
+            program = "${self'.packages.lispers}/bin/repl";
           };
           rt_demo = {
             type = "app";
-            program = "${packages.default}/bin/rt_demo";
+            program = "${self'.packages.lispers}/bin/rt_demo";
           };
           rt_demo_lisp = {
             type = "app";
-            program = "${packages.default}/bin/rt_lisp_demo";
+            program = "${self'.packages.lispers}/bin/rt_lisp_demo";
           };
           rt_interp = {
             type = "app";
-            program = "${packages.default}/bin/rt_interp";
+            program = "${self'.packages.lispers}/bin/rt_interp";
           };
-          default = rt_demo_lisp;
+          default = self'.apps.rt_demo_lisp;
         };
-        packages = rec {
-          lispers = cargoNix.workspaceMembers.lispers.build;
-          default = lispers;
+
+        devShells.default = pkgs.mkShell {
+          buildInputs = [rust-toolchain];
         };
-        devShell = pkgs.mkShell {
-          buildInputs = [rust-toolchain pkgs.cargo-edit pkgs.pkg-config pkgs.ffmpeg.dev pkgs.ffmpeg];
-        };
-      }
-    );
+      };
+    });
 }
