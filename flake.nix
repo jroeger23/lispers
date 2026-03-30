@@ -2,7 +2,7 @@
   description = "Rust-Nix";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -20,7 +20,7 @@
     allow-import-from-derivation = true;
   };
 
-  outputs = inputs @ {
+  outputs = {
     crate2nix,
     flake-utils,
     nixpkgs,
@@ -48,6 +48,22 @@
                 # Fix rav1e build.rs:278 error when no CARGO_ENCODED_RUSTFLAGS is set
                 rav1e = attrs: {
                   CARGO_ENCODED_RUSTFLAGS = "";
+                };
+                # Fix thread 'main' (222) panicked at build.rs:250:45:
+                av-scenechange = attrs: {
+                  CARGO_ENCODED_RUSTFLAGS = "";
+                };
+                # Bindgen fix
+                ffmpeg-sys-next = attrs: {
+                  buildInputs = [pkgs.ffmpeg_4];
+                  LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+                  nativeBuildInputs = [pkgs.pkg-config];
+                  BINDGEN_EXTRA_CLANG_ARGS = [
+                    "--sysroot=${pkgs.glibc.dev}"
+                  ];
+                };
+                ffmpeg-next = attrs: {
+                  features = ["codec" "format" "ffmpeg4" "ffmpeg_4_0" "ffmpeg_4_1" "ffmpeg_4_2" "ffmpeg_4_3" "ffmpeg_4_4" "ff_api_vaapi" "software-scaling" "software-resampling"];
                 };
               };
           };
@@ -90,7 +106,7 @@
           default = lispers;
         };
         devShell = pkgs.mkShell {
-          buildInputs = [rust-toolchain];
+          buildInputs = [rust-toolchain pkgs.cargo-edit pkgs.pkg-config pkgs.ffmpeg.dev pkgs.ffmpeg];
         };
       }
     );

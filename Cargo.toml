@@ -4,7 +4,7 @@ description = "lisp interpreter in rust for raytracing"
 publish = false
 version = "0.1.0"
 
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "lispers"
@@ -32,14 +32,15 @@ members = [ "lispers-core", "lispers-macro"]
 [workspace.dependencies]
 lispers-core = {path = "lispers-core"}
 lispers-macro = {path = "lispers-macro"}
-as-any = "0.3.1"
+as-any = "0.3.2"
 
 [dependencies]
 as-any = {workspace = true}
-futures = "0.3.30"
-image = "0.25.5"
-nalgebra = "0.33.2"
-nix = "0.29.0"
-rayon = "1.10.0"
+futures = "0.3.32"
+image = "0.25.10"
+nalgebra = "0.34.2"
+nix = "0.31.2"
+rayon = "1.11.0"
 lispers-core = {workspace = true}
 lispers-macro = {workspace = true}
+video-rs = "0.11.0"
