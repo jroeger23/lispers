@@ -17,20 +17,27 @@ fn main() {
     mk_prelude(&mut layer);
     mk_raytrace(&mut layer);
 
-    let environment = Environment::from_layer(layer);
+    let mut environment = Environment::from_layer(layer);
 
-    for (i, r) in
-        ExpressionStream::from_char_stream(programs.iter().map(|p| p.chars()).flatten()).enumerate()
-    {
-        match r {
-            Err(err) => {
-                println!("ParserError in Expression {}: {:?}", i + 1, err);
-                break;
+    for (program, path) in programs.iter().zip(program_paths) {
+        environment.set("FILE".to_string(), path.clone().into());
+
+        for (i, r) in ExpressionStream::from_char_stream(program.chars()).enumerate() {
+            match r {
+                Err(err) => {
+                    println!(
+                        "ParserError in File {} Expression {}: {:?}",
+                        path,
+                        i + 1,
+                        err
+                    );
+                    break;
+                }
+                Ok(expr) => match eval(&environment, expr) {
+                    Ok(_) => {}
+                    Err(e) => println!("Error evaluating Expression {}: {}", i + 1, e),
+                },
             }
-            Ok(expr) => match eval(&environment, expr) {
-                Ok(_) => {}
-                Err(e) => println!("Error evaluating Expression {}: {}", i + 1, e),
-            },
         }
     }
 
