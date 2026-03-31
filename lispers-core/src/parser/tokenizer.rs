@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::token::Token;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -5,6 +7,14 @@ use super::token::Token;
 pub enum TokenizerError {
     /// The tokenizer could not read the associated sequence.
     UnmatchedSequence(String),
+}
+
+impl Display for TokenizerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenizerError::UnmatchedSequence(s) => write!(f, "Unmatched sequence: {}", s),
+        }
+    }
 }
 
 /// A reader used to wrap the `TokenStream`.

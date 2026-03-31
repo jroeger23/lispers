@@ -3,6 +3,7 @@ use super::tokenizer::tokenize;
 use super::tokenizer::TokenStream;
 use super::tokenizer::TokenizerError;
 use crate::lisp::Expression;
+use std::fmt::Display;
 use std::iter::Peekable;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -15,6 +16,16 @@ pub enum ParserError {
 impl From<TokenizerError> for ParserError {
     fn from(value: TokenizerError) -> Self {
         ParserError::TokenizerError(value)
+    }
+}
+
+impl Display for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ParserError::TokenizerError(t) => write!(f, "Tokenizer Error: {}", t),
+            ParserError::UnexpectedToken(t) => write!(f, "Unexpecte Token: {}", t),
+            ParserError::UnexpectedEndOfInput => write!(f, "Unexpected end of input."),
+        }
     }
 }
 

@@ -1,10 +1,12 @@
 use std::fmt::Display;
 
+use crate::parser::ParserError;
+
 use super::environment::Environment;
 use super::environment::EnvironmentLayer;
 use super::expression::Expression;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 /// All possible evaluation errors
 pub enum EvalError {
     SymbolNotBound(String),
@@ -14,6 +16,7 @@ pub enum EvalError {
     TypeError(String),
     NotASymbol(Expression),
     RuntimeError(String),
+    ParserError(ParserError),
 }
 
 impl Display for EvalError {
@@ -26,6 +29,7 @@ impl Display for EvalError {
             EvalError::TypeError(s) => write!(f, "Type error: {}", s),
             EvalError::NotASymbol(e) => write!(f, "Expression {} is not a symbol", e),
             EvalError::RuntimeError(s) => write!(f, "Runtime error: {}", s),
+            EvalError::ParserError(s) => write!(f, "Parser error: {}", s),
         }
     }
 }
