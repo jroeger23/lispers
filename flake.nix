@@ -106,7 +106,12 @@
         };
 
         devShells.default = pkgs.mkShell {
-          buildInputs = [rust-toolchain];
+          inputsFrom = [self'.packages.lispers];
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+          nativeBuildInputs = [rust-toolchain pkgs.pkg-config pkgs.ffmpeg_4];
+          BINDGEN_EXTRA_CLANG_ARGS = [
+            "--sysroot=${pkgs.glibc.dev}"
+          ];
         };
       };
     });
