@@ -232,6 +232,16 @@ pub fn cos(x: f64) -> Result<f64, EvalError> {
     Ok(x.cos())
 }
 
+#[native_lisp_function(eval)]
+pub fn add_i(x: i64, y: i64) -> Result<i64, EvalError> {
+    Ok(x + y)
+}
+
+#[native_lisp_function(eval)]
+pub fn add_f(x: f64, y: f64) -> Result<f64, EvalError> {
+    Ok(x + y)
+}
+
 #[native_lisp_function]
 pub fn vadd_vv(
     a: ForeignDataWrapper<Vector3>,
@@ -257,15 +267,27 @@ pub fn vadd_pv(
 }
 
 native_lisp_function_proxy!(
-    fname = vadd,
+    fname = add,
     eval,
+    dispatch = add_i,
+    dispatch = add_f,
     dispatch = vadd_vv,
     dispatch = vadd_vp,
     dispatch = vadd_pv
 );
 
+#[native_lisp_function(eval)]
+pub fn sub_i(x: i64, y: i64) -> Result<i64, EvalError> {
+    Ok(x - y)
+}
+
+#[native_lisp_function(eval)]
+pub fn sub_f(x: f64, y: f64) -> Result<f64, EvalError> {
+    Ok(x - y)
+}
+
 #[native_lisp_function]
-pub fn vsub_vv(
+pub fn sub_vv(
     a: ForeignDataWrapper<Vector3>,
     b: ForeignDataWrapper<Vector3>,
 ) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
@@ -273,7 +295,7 @@ pub fn vsub_vv(
 }
 
 #[native_lisp_function]
-pub fn vsub_vp(
+pub fn sub_vp(
     a: ForeignDataWrapper<Vector3>,
     b: ForeignDataWrapper<Point3>,
 ) -> Result<ForeignDataWrapper<Point3>, EvalError> {
@@ -281,7 +303,7 @@ pub fn vsub_vp(
 }
 
 #[native_lisp_function]
-pub fn vsub_pv(
+pub fn sub_pv(
     a: ForeignDataWrapper<Point3>,
     b: ForeignDataWrapper<Vector3>,
 ) -> Result<ForeignDataWrapper<Point3>, EvalError> {
@@ -289,7 +311,7 @@ pub fn vsub_pv(
 }
 
 #[native_lisp_function]
-pub fn vsub_pp(
+pub fn sub_pp(
     a: ForeignDataWrapper<Point3>,
     b: ForeignDataWrapper<Point3>,
 ) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
@@ -297,16 +319,28 @@ pub fn vsub_pp(
 }
 
 native_lisp_function_proxy!(
-    fname = vsub,
+    fname = sub,
     eval,
-    dispatch = vsub_vv,
-    dispatch = vsub_vp,
-    dispatch = vsub_pv,
-    dispatch = vsub_pp
+    dispatch = sub_i,
+    dispatch = sub_f,
+    dispatch = sub_vv,
+    dispatch = sub_vp,
+    dispatch = sub_pv,
+    dispatch = sub_pp
 );
 
+#[native_lisp_function(eval)]
+pub fn mul_i(x: i64, y: i64) -> Result<i64, EvalError> {
+    Ok(x * y)
+}
+
+#[native_lisp_function(eval)]
+pub fn mul_f(x: f64, y: f64) -> Result<f64, EvalError> {
+    Ok(x * y)
+}
+
 #[native_lisp_function]
-pub fn vmul_vs(
+pub fn mul_vs(
     a: ForeignDataWrapper<Vector3>,
     b: f64,
 ) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
@@ -314,7 +348,7 @@ pub fn vmul_vs(
 }
 
 #[native_lisp_function]
-pub fn vmul_sv(
+pub fn mul_sv(
     a: f64,
     b: ForeignDataWrapper<Vector3>,
 ) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
@@ -322,7 +356,7 @@ pub fn vmul_sv(
 }
 
 #[native_lisp_function]
-pub fn vmul_ps(
+pub fn mul_ps(
     a: ForeignDataWrapper<Point3>,
     b: f64,
 ) -> Result<ForeignDataWrapper<Point3>, EvalError> {
@@ -330,7 +364,7 @@ pub fn vmul_ps(
 }
 
 #[native_lisp_function]
-pub fn vmul_sp(
+pub fn mul_sp(
     a: f64,
     b: ForeignDataWrapper<Point3>,
 ) -> Result<ForeignDataWrapper<Point3>, EvalError> {
@@ -338,12 +372,98 @@ pub fn vmul_sp(
 }
 
 native_lisp_function_proxy!(
-    fname = vmul,
+    fname = mul,
     eval,
-    dispatch = vmul_vs,
-    dispatch = vmul_sv,
-    dispatch = vmul_ps,
-    dispatch = vmul_sp
+    dispatch = mul_i,
+    dispatch = mul_f,
+    dispatch = mul_vs,
+    dispatch = mul_sv,
+    dispatch = mul_ps,
+    dispatch = mul_sp
+);
+
+#[native_lisp_function(eval)]
+pub fn div_i(x: i64, y: i64) -> Result<f64, EvalError> {
+    Ok(x as f64 / y as f64)
+}
+
+#[native_lisp_function(eval)]
+pub fn div_f(x: f64, y: f64) -> Result<f64, EvalError> {
+    Ok(x / y)
+}
+
+#[native_lisp_function]
+pub fn div_vs(
+    a: ForeignDataWrapper<Vector3>,
+    b: f64,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a / b))
+}
+
+#[native_lisp_function]
+pub fn div_sv(
+    a: f64,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*b / a))
+}
+
+#[native_lisp_function]
+pub fn div_ps(
+    a: ForeignDataWrapper<Point3>,
+    b: f64,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a / b))
+}
+
+#[native_lisp_function]
+pub fn div_sp(
+    a: f64,
+    b: ForeignDataWrapper<Point3>,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*b / a))
+}
+
+native_lisp_function_proxy!(
+    fname = div,
+    eval,
+    dispatch = div_i,
+    dispatch = div_f,
+    dispatch = div_vs,
+    dispatch = div_sv,
+    dispatch = div_ps,
+    dispatch = div_sp
+);
+
+#[native_lisp_function(eval)]
+pub fn dot(
+    a: ForeignDataWrapper<Vector3>,
+    b: ForeignDataWrapper<Vector3>,
+) -> Result<f64, EvalError> {
+    Ok(a.dot(&b))
+}
+
+#[native_lisp_function]
+pub fn abs_i(a: i64) -> Result<i64, EvalError> {
+    Ok(a.abs())
+}
+
+#[native_lisp_function]
+pub fn abs_f(a: f64) -> Result<f64, EvalError> {
+    Ok(a.abs())
+}
+
+#[native_lisp_function]
+pub fn abs_v(a: ForeignDataWrapper<Vector3>) -> Result<f64, EvalError> {
+    Ok(a.dot(&a).sqrt())
+}
+
+native_lisp_function_proxy!(
+    fname = abs,
+    eval,
+    dispatch = abs_i,
+    dispatch = abs_f,
+    dispatch = abs_v
 );
 
 /// Adds the raytracing functions to the given environment layer.
@@ -373,7 +493,10 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     );
     layer.set("sin".to_string(), Expression::Function(sin));
     layer.set("cos".to_string(), Expression::Function(cos));
-    layer.set("vadd".to_string(), Expression::Function(vadd));
-    layer.set("vsub".to_string(), Expression::Function(vsub));
-    layer.set("vmul".to_string(), Expression::Function(vmul));
+    layer.set("+".to_string(), Expression::Function(add));
+    layer.set("-".to_string(), Expression::Function(sub));
+    layer.set("*".to_string(), Expression::Function(mul));
+    layer.set("/".to_string(), Expression::Function(div));
+    layer.set("dot".to_string(), Expression::Function(dot));
+    layer.set("abs".to_string(), Expression::Function(abs));
 }

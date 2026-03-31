@@ -57,7 +57,7 @@
          (up . (vector 0 1 0))
          (fovy . 80)
          (pct . (/ t 300.0)))
-    (let '((tpos . (vadd pos (vmul (vsub to pos) pct)))
+    (let '((tpos . (+ pos (* (- to pos) pct)))
            (tfovy . (+ fovy (* 40 pct)))
            )
       (camera-reposition c tpos cnt up tfovy)
