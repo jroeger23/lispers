@@ -108,6 +108,38 @@ impl Camera {
         });
         img
     }
+
+    pub fn reposition(
+        &self,
+        position: Point3,
+        center: Point3,
+        up: Vector3,
+        fovy: Scalar,
+    ) -> Camera {
+        Camera::new(position, center, up, fovy, self.width, self.height)
+    }
+
+    pub fn render_animation<SFn: Fn(u32) -> Scene, CFn: Fn(u32, &Camera) -> Camera>(
+        &self,
+        scene_fn: SFn,
+        update_cam: CFn,
+        frames: u32,
+        fps: u32,
+        depth: u32,
+        subp: u32,
+    ) {
+        let mut cam = self.to_owned();
+        for t in 0..frames {
+            println!("Rendering frame {}/{}", t + 1, frames);
+            cam = update_cam(t, &cam);
+            let img = cam.render(&scene_fn(t), depth, subp);
+
+            match img.save(format!("frame_{:04}.png", t)) {
+                Ok(_) => {}
+                Err(e) => print!("Could not render frame: {}", e),
+            }
+        }
+    }
 }
 
 impl Display for Camera {

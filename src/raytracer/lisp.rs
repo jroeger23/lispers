@@ -149,6 +149,19 @@ pub fn camera(
 }
 
 #[native_lisp_function(eval)]
+pub fn camera_reposition(
+    cam: ForeignDataWrapper<Camera>,
+    pos: ForeignDataWrapper<Point3>,
+    cnt: ForeignDataWrapper<Point3>,
+    up: ForeignDataWrapper<Vector3>,
+    fovy: f64,
+) -> Result<ForeignDataWrapper<Camera>, EvalError> {
+    Ok(ForeignDataWrapper::new(
+        cam.to_owned().reposition(*pos, *cnt, *up, fovy),
+    ))
+}
+
+#[native_lisp_function(eval)]
 pub fn render(
     cam: ForeignDataWrapper<Camera>,
     sce: ForeignDataWrapper<Scene>,
@@ -163,6 +176,41 @@ pub fn render(
         Ok(_) => Ok(Expression::Nil),
         Err(e) => Err(EvalError::RuntimeError(e.to_string())),
     }
+}
+
+pub fn render_animation(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [cam, scene_fn, update_cam, frames, fps, depth, subp]: [Expression; 7] = expr.try_into()?;
+
+    let cam: ForeignDataWrapper<Camera> = eval(env, cam)?.try_into()?;
+    let frames: i64 = eval(env, frames)?.try_into()?;
+    let fps: i64 = eval(env, fps)?.try_into()?;
+    let depth: i64 = eval(env, depth)?.try_into()?;
+    let subp: i64 = eval(env, subp)?.try_into()?;
+
+    let sfn = |t: u32| -> Scene {
+        let scene_fn_call: Expression = [scene_fn.clone(), (t as i64).into()].into();
+        let scn: ForeignDataWrapper<Scene> = eval(env, scene_fn_call).unwrap().try_into().unwrap();
+        scn.to_owned()
+    };
+
+    let ucm = |t: u32, c: &Camera| -> Camera {
+        let c = ForeignDataWrapper::new(c.to_owned());
+        let update_cam_call: Expression = [update_cam.clone(), (t as i64).into(), c.into()].into();
+        let new_c: ForeignDataWrapper<Camera> =
+            eval(env, update_cam_call).unwrap().try_into().unwrap();
+        new_c.to_owned()
+    };
+
+    cam.render_animation(
+        sfn,
+        ucm,
+        frames as u32,
+        fps as u32,
+        depth as u32,
+        subp as u32,
+    );
+
+    Ok(Expression::Nil)
 }
 
 #[native_lisp_function(eval)]
@@ -231,12 +279,21 @@ pub fn vsub_pv(
     Ok(ForeignDataWrapper::new(*a - *b))
 }
 
+#[native_lisp_function]
+pub fn vsub_pp(
+    a: ForeignDataWrapper<Point3>,
+    b: ForeignDataWrapper<Point3>,
+) -> Result<ForeignDataWrapper<Vector3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a - *b))
+}
+
 native_lisp_function_proxy!(
     fname = vsub,
     eval,
     dispatch = vsub_vv,
     dispatch = vsub_vp,
-    dispatch = vsub_pv
+    dispatch = vsub_pv,
+    dispatch = vsub_pp
 );
 
 #[native_lisp_function]
@@ -255,7 +312,30 @@ pub fn vmul_sv(
     Ok(ForeignDataWrapper::new(*b * a))
 }
 
-native_lisp_function_proxy!(fname = vmul, eval, dispatch = vmul_vs, dispatch = vmul_sv);
+#[native_lisp_function]
+pub fn vmul_ps(
+    a: ForeignDataWrapper<Point3>,
+    b: f64,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*a * b))
+}
+
+#[native_lisp_function]
+pub fn vmul_sp(
+    a: f64,
+    b: ForeignDataWrapper<Point3>,
+) -> Result<ForeignDataWrapper<Point3>, EvalError> {
+    Ok(ForeignDataWrapper::new(*b * a))
+}
+
+native_lisp_function_proxy!(
+    fname = vmul,
+    eval,
+    dispatch = vmul_vs,
+    dispatch = vmul_sv,
+    dispatch = vmul_ps,
+    dispatch = vmul_sp
+);
 
 /// Adds the raytracing functions to the given environment layer.
 pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
@@ -273,7 +353,15 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     layer.set("scene".to_string(), Expression::Function(scene));
     layer.set("scene-add".to_string(), Expression::Function(scene_add));
     layer.set("camera".to_string(), Expression::Function(camera));
+    layer.set(
+        "camera-reposition".to_string(),
+        Expression::Function(camera_reposition),
+    );
     layer.set("render".to_string(), Expression::Function(render));
+    layer.set(
+        "render-animation".to_string(),
+        Expression::Function(render_animation),
+    );
     layer.set("sin".to_string(), Expression::Function(sin));
     layer.set("cos".to_string(), Expression::Function(cos));
     layer.set("vadd".to_string(), Expression::Function(vadd));
