@@ -1,5 +1,5 @@
 use super::{expression::Expression, prelude::mk_prelude};
-use std::{cell::RefCell, collections::HashMap, env, path::Path, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 #[derive(PartialEq, Clone, Debug)]
 /// A Environment is a stack of `EnvironmentLayer`s. Each `EnvironmentLayer` is a mapping from
@@ -64,7 +64,7 @@ impl<'a> Environment<'a> {
     }
 
     /// Construct a new `Environment` with `self` as the outer `Environment`.
-    pub fn mk_inner(&self) -> Environment {
+    pub fn mk_inner(&'a self) -> Environment<'a> {
         Environment {
             layer: EnvironmentLayer::new(),
             outer: Some(self),
