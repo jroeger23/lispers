@@ -43,4 +43,5 @@ nix = "0.31.2"
 rayon = "1.11.0"
 lispers-core = {workspace = true}
 lispers-macro = {workspace = true}
-video-rs = "0.11.0"
+video-rs = { version = "0.11.0", features = ["ndarray"] }
+ndarray = "0.17.2"

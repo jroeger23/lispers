@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::raytracer::{scene::Scene, types::Light};
 
 use lispers_macro::{native_lisp_function, native_lisp_function_proxy};
@@ -14,6 +16,7 @@ use super::{
     plane::{Checkerboard, Plane},
     sphere::Sphere,
     types::{Color, Material, Point3, RTObjectWrapper, Vector3},
+    RTError,
 };
 
 #[native_lisp_function(eval)]
@@ -179,38 +182,44 @@ pub fn render(
 }
 
 pub fn render_animation(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
-    let [cam, scene_fn, update_cam, frames, fps, depth, subp]: [Expression; 7] = expr.try_into()?;
+    let [cam, path, scene_fn, update_cam, frames, fps, depth, subp]: [Expression; 8] =
+        expr.try_into()?;
 
     let cam: ForeignDataWrapper<Camera> = eval(env, cam)?.try_into()?;
+    let path: String = eval(env, path)?.try_into()?;
     let frames: i64 = eval(env, frames)?.try_into()?;
     let fps: i64 = eval(env, fps)?.try_into()?;
     let depth: i64 = eval(env, depth)?.try_into()?;
     let subp: i64 = eval(env, subp)?.try_into()?;
 
-    let sfn = |t: u32| -> Scene {
+    let sfn = |t: u32| -> Result<Scene, EvalError> {
         let scene_fn_call: Expression = [scene_fn.clone(), (t as i64).into()].into();
-        let scn: ForeignDataWrapper<Scene> = eval(env, scene_fn_call).unwrap().try_into().unwrap();
-        scn.to_owned()
+        let scn: ForeignDataWrapper<Scene> = eval(env, scene_fn_call)?.try_into()?;
+        Ok(scn.to_owned())
     };
 
-    let ucm = |t: u32, c: &Camera| -> Camera {
+    let ucm = |t: u32, c: &Camera| -> Result<Camera, EvalError> {
         let c = ForeignDataWrapper::new(c.to_owned());
         let update_cam_call: Expression = [update_cam.clone(), (t as i64).into(), c.into()].into();
-        let new_c: ForeignDataWrapper<Camera> =
-            eval(env, update_cam_call).unwrap().try_into().unwrap();
-        new_c.to_owned()
+        let new_c: ForeignDataWrapper<Camera> = eval(env, update_cam_call)?.try_into()?;
+        Ok(new_c.to_owned())
     };
 
-    cam.render_animation(
+    let path: PathBuf = path.into();
+
+    match cam.render_animation(
+        &path,
         sfn,
         ucm,
         frames as u32,
         fps as u32,
         depth as u32,
         subp as u32,
-    );
-
-    Ok(Expression::Nil)
+    ) {
+        Ok(()) => Ok(Expression::Nil),
+        Err(RTError::EvalError(e)) => Err(e),
+        Err(RTError::FFMpegError(e)) => Err(EvalError::RuntimeError(e.to_string())),
+    }
 }
 
 #[native_lisp_function(eval)]
