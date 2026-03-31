@@ -179,13 +179,14 @@ pub fn native_lisp_function_proxy(item: TokenStream) -> TokenStream {
         })
         .collect::<Vec<_>>();
 
+    let fname_str = fname.to_string();
     quote! {
         fn #fname(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
             #eval_statement
 
             #(#try_apply_statements)*
 
-            Err(EvalError::TypeError("No applicable method found".to_string()))
+            Err(EvalError::TypeError(format!("No applicable method found for {}", #fname_str).to_string()))
         }
     }
     .into()
