@@ -19,6 +19,12 @@ pub enum EvalError {
     ParserError(ParserError),
 }
 
+impl From<ParserError> for EvalError {
+    fn from(value: ParserError) -> Self {
+        EvalError::ParserError(value)
+    }
+}
+
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {

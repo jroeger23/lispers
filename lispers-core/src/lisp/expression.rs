@@ -361,7 +361,7 @@ impl Display for Expression {
             Expression::Symbol(s) => write!(f, "{}", s),
             Expression::Integer(i) => write!(f, "{}", i),
             Expression::Float(fl) => write!(f, "{}", fl),
-            Expression::String(s) => write!(f, "{}", s),
+            Expression::String(s) => write!(f, "\"{}\"", s),
             Expression::True => write!(f, "true"),
             Expression::Nil => write!(f, "nil"),
         }

@@ -1,3 +1,6 @@
+use crate::parser::ExpressionStream;
+use crate::parser::ParserError;
+
 use super::environment::Environment;
 use super::environment::EnvironmentLayer;
 use super::eval::eval;
@@ -5,6 +8,7 @@ use super::eval::CellIterator;
 use super::eval::EvalError;
 use super::expression::Expression;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub fn prelude_add(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
     let [a, b] = expr.try_into()?;
@@ -325,6 +329,54 @@ pub fn prelude_to_string(env: &Environment, expr: Expression) -> Result<Expressi
     Ok(Expression::String(format!("{}", eval(env, e)?)))
 }
 
+pub fn prelude_load(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [expr] = expr.try_into()?;
+    let lisp_string: String = eval(env, expr)?.try_into()?;
+
+    let mut last_result = Expression::Nil;
+
+    for expr in ExpressionStream::from_char_stream(lisp_string.chars())
+        .collect::<Result<Vec<Expression>, ParserError>>()?
+    {
+        last_result = eval(env, expr)?;
+    }
+
+    Ok(last_result)
+}
+
+pub fn prelude_include(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
+    let [expr] = expr.try_into()?;
+    let lisp_file: String = eval(env, expr)?.try_into()?;
+
+    // Try to resolve as relative to FILE
+    let resolved_lisp_file: PathBuf = PathBuf::from(
+        env.get("FILE")
+            .map(|x| x.try_into())
+            .unwrap_or(Ok(String::new()))?,
+    )
+    .parent()
+    .ok_or(EvalError::RuntimeError(
+        "Could not get parent of current file.".to_string(),
+    ))?
+    .join(&lisp_file);
+
+    let lisp_string = std::fs::read_to_string(&resolved_lisp_file)
+        .map_err(|e| EvalError::RuntimeError(e.to_string()))?;
+
+    // Use enviroment for resolved file or fallback to the lisp_file argument
+    let mut env = env.mk_inner();
+    env.set(
+        "FILE".to_string(),
+        resolved_lisp_file
+            .to_str()
+            .unwrap_or(&lisp_file)
+            .to_string()
+            .into(),
+    );
+
+    prelude_load(&env, [lisp_string.into()].into())
+}
+
 pub fn mk_prelude(layer: &mut EnvironmentLayer) {
     layer.set("+".to_string(), Expression::Function(prelude_add));
     layer.set("-".to_string(), Expression::Function(prelude_sub));
@@ -355,4 +407,6 @@ pub fn mk_prelude(layer: &mut EnvironmentLayer) {
         "to-string".to_string(),
         Expression::Function(prelude_to_string),
     );
+    layer.set("load".to_string(), Expression::Function(prelude_load));
+    layer.set("include".to_string(), Expression::Function(prelude_include));
 }
