@@ -1,3 +1,5 @@
+use nalgebra::distance;
+
 use super::types::{Intersect, Material, Point3, Ray, Scalar, Vector3};
 
 extern crate nalgebra as na;
@@ -52,12 +54,21 @@ impl Intersect for Sphere {
             if t < Scalar::MAX {
                 let isect_pt: Point3 = ray.origin + ray.direction * t;
 
-                return Some((
-                    isect_pt,
-                    (isect_pt - self.center) / self.radius,
-                    t,
-                    self.material.clone(),
-                ));
+                if c >= 0.0 {
+                    return Some((
+                        isect_pt,
+                        (isect_pt - self.center) / self.radius,
+                        t,
+                        self.material.clone(),
+                    ));
+                } else {
+                    return Some((
+                        isect_pt,
+                        -(isect_pt - self.center) / self.radius,
+                        t,
+                        self.material.clone(),
+                    ));
+                }
             }
         }
 

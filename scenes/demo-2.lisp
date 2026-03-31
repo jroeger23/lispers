@@ -29,6 +29,13 @@
       (color 0.6 0.6 0.6)
       100 0.5))
 
+(set 'dark-mirror
+     (material
+      (color 0 0 0)
+      (color 0 0 0)
+      (color 0.2 0.2 0.2)
+      20 0.6))
+
 (set 's1
      (sphere
       (point 0 1 0) 1 blue))
@@ -36,22 +43,26 @@
      (sphere
       (point 2 0.5 2) 0.5 green))
 
-(defun spiral-sphere (i n)
+(set 'mirror-dome
+     (sphere
+      (point 0 -30 0)
+      100 dark-mirror))
+
+(defun spiral-sphere (i n t)
   (sphere
    (progn
-     (print "Spiral Sphere at: ")
-     (println (point
-               (* 2 (cos (/ (* i 6.2) n)))
-               0.5
-               (* 2 (sin (/ (* i 6.2) n)))))
+     (point
+      (* 2 (cos (/ (* i 6.2) n)))
+      (+ 0.5 (* 0.3 (cos (+ (/ (* i 6.2) n) (/ t 5.0)))))
+      (* 2 (sin (/ (* i 6.2) n))))
      )
-   0.5 red))
+   0.2 red))
 
-(defun spiral (scn i n)
+(defun spiral (scn i n t)
   (if (< i n)
       (scene-add
-       (spiral scn (+ i 1) n)
-       (spiral-sphere i n))
+       (spiral scn (+ i 1) n t)
+       (spiral-sphere i n t))
       scn))
 
 (set 'p1
@@ -67,22 +78,20 @@
 
 (set 'scn-base (scene
                 (color 0.1 0.1 0.1)
-                '(s1 s2 p1)
+                '(s1 s2 p1 mirror-dome)
                 '(l1 l2)))
-
-(set 'scn (spiral scn-base 0 10))
 
 (set 'cam (camera (point 0 3 6) (point 0 0 0) (vector 0 1 0) 40 1920 1080))
 
 (defun scene-fn (t)
-  scn)
+  (spiral scn-base 0 30 t))
 
 (defun cam-fn (t c)
-  (let '((pos . (point 0 4 8))
+  (let '((pos . (point -3 0.5 8))
          (cnt . (point 0 0 0))
-         (to . (point -2 3 -6))
+         (to . (point -3 0.5 -8))
          (up . (vector 0 1 0))
-         (fovy . 40)
+         (fovy . 80)
          (pct . (/ t 300.0)))
     (let '((tpos . (vadd pos (vmul (vsub to pos) pct)))
            (tfovy . (+ fovy (* 40 pct)))
@@ -91,4 +100,4 @@
       )
     ))
 
-(render-animation cam "demo-animation-2.mp4" scene-fn cam-fn 300 30 4 2)
+(render-animation cam "demo-animation.mp4" scene-fn cam-fn 400 30 4 2)
