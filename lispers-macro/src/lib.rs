@@ -186,7 +186,7 @@ pub fn native_lisp_function_proxy(item: TokenStream) -> TokenStream {
 
             #(#try_apply_statements)*
 
-            Err(EvalError::TypeError(format!("No applicable method found for {}", #fname_str).to_string()))
+            Err(EvalError::TypeError(format!("Could not call {} with arguments {} ", #fname_str, expr).to_string()))
         }
     }
     .into()
