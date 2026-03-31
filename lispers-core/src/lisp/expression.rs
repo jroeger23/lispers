@@ -192,6 +192,18 @@ impl From<Vec<Expression>> for Expression {
     }
 }
 
+impl<const N: usize> From<[Expression; N]> for Expression {
+    fn from(mut value: [Expression; N]) -> Self {
+        let mut current = Expression::Nil;
+
+        for e in value.iter_mut().rev() {
+            current = Expression::Cell(Box::new(e.to_owned()), Box::new(current));
+        }
+
+        current
+    }
+}
+
 impl From<(Expression, Expression)> for Expression {
     fn from(value: (Expression, Expression)) -> Self {
         Expression::Cell(Box::new(value.0), Box::new(value.1))
