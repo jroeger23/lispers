@@ -294,7 +294,9 @@ where
     let mut buf = String::new();
 
     while let Some(c) = reader.next() {
-        if c.is_ascii_digit() {
+        if buf.is_empty() && c == '-' {
+            buf.push(c);
+        } else if c.is_ascii_digit() {
             buf.push(c);
         } else {
             reader.step_back(1);
@@ -317,7 +319,9 @@ where
     let mut has_dot = false;
 
     while let Some(c) = reader.next() {
-        if c.is_ascii_digit() {
+        if buf.is_empty() && c == '-' {
+            buf.push(c);
+        } else if c.is_ascii_digit() {
             buf.push(c);
         } else if c == '.' && !has_dot {
             buf.push(c);
@@ -337,11 +341,12 @@ where
 
 #[test]
 fn test_tokenize() {
-    let test_str = "(\"abcdefg( )123\" )(\n\t 'nil true \"true\")00987463 123.125 . 0+-*/go=";
+    let test_str =
+        "(\"abcdefg( )123\" )(\n\t 'nil true \"true\")00987463 123.125 -20 -3.14 . 0+-*/go=";
 
     let result: Vec<_> = tokenize(&mut test_str.chars()).collect();
 
-    assert_eq!(result.len(), 13);
+    assert_eq!(result.len(), 15);
     assert_eq!(result[0].clone().unwrap(), Token::ParOpen);
     assert_eq!(
         result[1].clone().unwrap(),
@@ -359,9 +364,11 @@ fn test_tokenize() {
     assert_eq!(result[8].clone().unwrap(), Token::ParClose);
     assert_eq!(result[9].clone().unwrap(), Token::IntLiteral(987463));
     assert_eq!(result[10].clone().unwrap(), Token::FloatLiteral(123.125));
-    assert_eq!(result[11].clone().unwrap(), Token::Dot);
+    assert_eq!(result[11].clone().unwrap(), Token::IntLiteral(-20));
+    assert_eq!(result[12].clone().unwrap(), Token::FloatLiteral(-3.14));
+    assert_eq!(result[13].clone().unwrap(), Token::Dot);
     assert_eq!(
-        result[12].clone().unwrap(),
+        result[14].clone().unwrap(),
         Token::Symbol("0+-*/go=".to_string())
     );
 }
