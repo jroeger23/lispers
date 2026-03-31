@@ -9,8 +9,8 @@
 
 (set 'mirror-dome
      (sphere
-      (point 0 -30 0)
-      100 dark-mirror))
+      (point 0 -17 0)
+      30 dark-mirror))
 
 (defun spiral-sphere (i n t)
   (sphere
@@ -64,4 +64,4 @@
       )
     ))
 
-(render-animation cam "demo-animation.mp4" scene-fn cam-fn 400 30 4 2)
+(render-animation cam "demo-animation.mp4" scene-fn cam-fn 400 30 7 2)

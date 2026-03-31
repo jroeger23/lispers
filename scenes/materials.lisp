@@ -21,17 +21,17 @@
       (color 1 1 1)
       (color 1 1 1)
       (color 0.6 0.6 0.6)
-      100 0.5))
+      100 0.4))
 (set 'black
      (material
       (color 0 0 0)
       (color 0 0 0)
       (color 0.6 0.6 0.6)
-      100 0.5))
+      100 0.4))
 
 (set 'dark-mirror
      (material
-      (color 0 0 0)
-      (color 0 0 0)
-      (color 0.2 0.2 0.2)
-      20 0.6))
+      (color 0.01 0.05 0.15)
+      (color 0.01 0.05 0.15)
+      (color 0.01 0.05 0.15)
+      20 0.7))
