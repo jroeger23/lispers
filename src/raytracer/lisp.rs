@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
-use crate::raytracer::{scene::Scene, types::Light};
+use crate::raytracer::{
+    scene::Scene,
+    texture::TextureWrapper,
+    types::{Light, Point2},
+};
 
 use lispers_macro::{native_lisp_function, native_lisp_function_proxy};
 
@@ -13,8 +17,9 @@ use lispers_core::lisp::{
 
 use super::{
     camera::Camera,
-    plane::{Checkerboard, Plane},
+    plane::{Checkerboard, Plane, TexturePlane},
     sphere::Sphere,
+    texture::MandelbrotTexture,
     types::{Color, Material, Point3, RTObjectWrapper, Vector3},
     RTError,
 };
@@ -22,6 +27,11 @@ use super::{
 #[native_lisp_function(eval)]
 pub fn point(x: f64, y: f64, z: f64) -> Result<ForeignDataWrapper<Point3>, EvalError> {
     Ok(ForeignDataWrapper::new(Point3::new(x, y, z)))
+}
+
+#[native_lisp_function(eval)]
+pub fn point2(x: f64, y: f64) -> Result<ForeignDataWrapper<Point2>, EvalError> {
+    Ok(ForeignDataWrapper::new(Point2::new(x, y)))
 }
 
 #[native_lisp_function(eval)]
@@ -88,6 +98,47 @@ pub fn checkerboard(
         )))
         .into(),
     )
+}
+
+#[native_lisp_function(eval)]
+pub fn texture_plane(
+    texture: ForeignDataWrapper<TextureWrapper>,
+    pos: ForeignDataWrapper<Point3>,
+    norm: ForeignDataWrapper<Vector3>,
+    sca: f64,
+    up: ForeignDataWrapper<Vector3>,
+) -> Result<ForeignDataWrapper<RTObjectWrapper>, EvalError> {
+    Ok(
+        ForeignDataWrapper::new(RTObjectWrapper::from(TexturePlane::new(
+            *pos,
+            *norm,
+            texture.clone(),
+            sca,
+            *up,
+        )))
+        .into(),
+    )
+}
+
+#[native_lisp_function(eval)]
+pub fn mandelbrot_texture(
+    scale: f64,
+    at: ForeignDataWrapper<Point2>,
+    max_iter: i64,
+    ambient_color: ForeignDataWrapper<Color>,
+    diffuse_color: ForeignDataWrapper<Color>,
+    specular_color: ForeignDataWrapper<Color>,
+) -> Result<ForeignDataWrapper<TextureWrapper>, EvalError> {
+    Ok(ForeignDataWrapper::new(TextureWrapper::new(
+        MandelbrotTexture::new(
+            scale,
+            *at,
+            max_iter as u32,
+            *ambient_color,
+            *diffuse_color,
+            *specular_color,
+        ),
+    )))
 }
 
 pub fn scene(env: &Environment, expr: Expression) -> Result<Expression, EvalError> {
@@ -469,6 +520,7 @@ native_lisp_function_proxy!(
 /// Adds the raytracing functions to the given environment layer.
 pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     layer.set("point".to_string(), Expression::Function(point));
+    layer.set("point2".to_string(), Expression::Function(point2));
     layer.set("vector".to_string(), Expression::Function(vector));
     layer.set("color".to_string(), Expression::Function(color));
     layer.set("light".to_string(), Expression::Function(light));
@@ -477,6 +529,14 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
     layer.set(
         "checkerboard".to_string(),
         Expression::Function(checkerboard),
+    );
+    layer.set(
+        "texture-plane".to_string(),
+        Expression::Function(texture_plane),
+    );
+    layer.set(
+        "mandelbrot-texture".to_string(),
+        Expression::Function(mandelbrot_texture),
     );
     layer.set("sphere".to_string(), Expression::Function(sphere));
     layer.set("scene".to_string(), Expression::Function(scene));

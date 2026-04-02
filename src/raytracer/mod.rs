@@ -3,6 +3,7 @@ pub mod lisp;
 pub mod plane;
 pub mod scene;
 pub mod sphere;
+mod texture;
 pub mod types;
 mod vec;
 

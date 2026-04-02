@@ -1,5 +1,3 @@
-use nalgebra::distance;
-
 use super::types::{Intersect, Material, Point3, Ray, Scalar, Vector3};
 
 extern crate nalgebra as na;

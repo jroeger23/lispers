@@ -10,6 +10,8 @@ pub type Scalar = f64;
 pub type Vector3 = na::Vector3<Scalar>;
 /// The Point3 type to use for raytracing
 pub type Point3 = na::Point3<Scalar>;
+/// The Point2 type to use for texture lookups
+pub type Point2 = na::Point2<Scalar>;
 /// The Color type to use for raytracing
 pub type Color = Vector3;
 
