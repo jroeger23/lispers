@@ -14,7 +14,7 @@ pub trait Texture: Display + Debug + AsAny + Sync + Send {
     fn material_at(&self, pt: Point2) -> Material;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct TextureWrapper(Arc<dyn Texture>);
 
 impl TextureWrapper {
@@ -25,7 +25,13 @@ impl TextureWrapper {
 
 impl Display for TextureWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self, f)
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl Debug for TextureWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
     }
 }
 
@@ -114,7 +120,7 @@ impl Debug for MandelbrotTexture {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "MandelbrotTexture{{at={}, max_iter={}}}",
+            "MandelbrotTexture{{at={:?}, max_iter={:?}}}",
             self.at, self.max_iter
         )
     }
