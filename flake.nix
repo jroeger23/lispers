@@ -110,7 +110,7 @@
             type = "app";
             program = "${self'.packages.lispers}/bin/rt_interp";
           };
-          default = self'.apps.rt_demo_lisp;
+          default = self'.apps.rt_lisp_lisp;
         };
 
         devShells.default = pkgs.mkShell {
