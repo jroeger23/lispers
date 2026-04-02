@@ -79,7 +79,15 @@
           overlays = [rust-overlay.overlays.default];
         };
 
-        packages.lispers = cargoNix.workspaceMembers.lispers.build;
+        packages.lispers = cargoNix.workspaceMembers.lispers.build.overrideAttrs (attrs: {
+          preConfigure = ''
+            export LISPERS_OUT_DIR="$out"
+            export LISPERS_DONT_COPY_SCENES=1
+          '';
+          postInstall = ''
+            cp -r $src/scenes $out/scenes
+          '';
+        });
         packages.default = self'.packages.lispers;
         apps = {
           lisp_demo = {
@@ -94,7 +102,7 @@
             type = "app";
             program = "${self'.packages.lispers}/bin/rt_demo";
           };
-          rt_demo_lisp = {
+          rt_lisp_demo = {
             type = "app";
             program = "${self'.packages.lispers}/bin/rt_lisp_demo";
           };
@@ -106,7 +114,9 @@
         };
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [self'.packages.lispers];
+          shellHook = ''
+            export LISPERS_USE_LOCAL_SCENES=1
+          '';
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           nativeBuildInputs = [rust-toolchain pkgs.pkg-config pkgs.ffmpeg_4];
           BINDGEN_EXTRA_CLANG_ARGS = [

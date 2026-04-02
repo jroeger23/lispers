@@ -1,37 +1,51 @@
+use std::collections::HashMap;
+use std::path::Path;
+
 use lispers::raytracer::lisp::mk_raytrace;
 use lispers_core::lisp::environment::EnvironmentLayer;
 use lispers_core::lisp::prelude::mk_prelude;
 use lispers_core::lisp::{eval, Environment};
 use lispers_core::parser::ExpressionStream;
 
+const SCENES_DIR: &str = env!("SCENES_DIR");
+
 fn main() {
-    let programs = [
-        "(set 'red (material (color 1 0 0) (color 1 0 0) (color 0.5 0 0) 50 0.25))",
-        "(set 'blue (material (color 0 0 1) (color 0 0 1) (color 0 0 0.6) 50 0.25))",
-        "(set 'green (material (color 0 1 0) (color 0 1 0) (color 0 0.6 0) 50 0.25))",
-        "(set 'white (material (color 1 1 1) (color 1 1 1) (color 0.6 0.6 0.6) 100 0.5))",
-        "(set 'black (material (color 0 0 0) (color 0 0 0) (color 0.6 0.6 0.6) 100 0.5))",
-        "(set 's1 (sphere (point 0 1 0) 1 blue))",
-        "(set 's2 (sphere (point 2 0.5 2) 0.5 green))",
-        "(defun spiral-sphere (i n) (sphere (print (point (* 2 (cos (/ (* i 6.2) n))) 0.5 (* 2 (sin (/ (* i 6.2) n))))) 0.5 red))",
-        "(defun spiral (scn i n) (if (< i n) (scene-add (spiral scn (+ i 1) n) (spiral-sphere i n)) scn))",
-        "(set 'p1 (checkerboard (point 0 0 0) (vector 0 1 0) black white 0.5 (vector 0.5 0 1)))",
-        "(set 'l1 (light (point 3 10 5) (color 1 1 1)))",
-        "(set 'l2 (light (point 2 10 5) (color 1 1 1)))",
-        "(set 'scn (scene (color 0.1 0.1 0.1) '(s1 s2 p1) '(l1 l2)))",
-        "(set 'scn (spiral scn 0.0 10.0))",
-        "(print scn)",
-        "(set 'cam (camera (point 0 3 6) (point 0 0 0) (vector 0 1 0) 40 1920 1080))",
-        "(render cam scn 5 4 \"rt-lisp-demo.png\")",
-    ];
+    println!("Loading scenes from directory: {}", SCENES_DIR);
+
+    let mut scenes = HashMap::new();
+    for e in std::fs::read_dir(Path::new(SCENES_DIR)).expect("Failed to read scenes directory") {
+        let e = e.expect("Failed to read scene file");
+        let t = e.file_type().expect("Failed to read scene file type");
+        let n = e
+            .file_name()
+            .into_string()
+            .expect("Failed to read scene file name");
+        if t.is_file() && n.starts_with("demo-") && n.ends_with(".lisp") {
+            scenes.insert(n, e);
+        }
+    }
 
     let mut layer = EnvironmentLayer::new();
     mk_prelude(&mut layer);
     mk_raytrace(&mut layer);
-
     let environment = Environment::from_layer(layer);
 
-    for r in ExpressionStream::from_char_stream(programs.iter().map(|p| p.chars()).flatten()) {
+    let args: Vec<_> = std::env::args().collect();
+
+    if args.len() != 2 {
+        println!("Usage: {} <scene-file.lisp>", args[0]);
+        println!("Available scene files:");
+        for name in scenes.keys() {
+            println!("  {}", name);
+        }
+        return;
+    }
+
+    for r in ExpressionStream::from_char_stream(
+        std::fs::read_to_string(scenes.get(&args[1]).expect("Scene file not found").path())
+            .expect("Failed to read scene file")
+            .chars(),
+    ) {
         match r {
             Err(err) => {
                 println!("ParserError: {:?}", err);
