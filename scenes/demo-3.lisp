@@ -17,32 +17,7 @@
       (color 0 0.6 0)
       50 0.25))
 
-(set 's1
-     (sphere
-      (point 0 1 0) 1 blue))
-(set 's2
-     (sphere
-      (point 2 0.5 2) 0.5 green))
-
-(defun spiral-sphere (i n)
-  (sphere
-   (progn
-     (print "Spiral Sphere at: ")
-     (println (point
-               (* 2 (cos (/ (* i 6.2) n)))
-               0.5
-               (* 2 (sin (/ (* i 6.2) n)))))
-     )
-   0.5 red))
-
-(defun spiral (scn i n)
-  (if (< i n)
-      (scene-add
-       (spiral scn (+ i 1) n)
-       (spiral-sphere i n))
-      scn))
-
-(set 'mandelbrot
+(set 'mandelbrot-red
      (mandelbrot-texture
       1800.0
       (point2 -0.7489967346191402 -0.06952285766601607)
@@ -52,9 +27,27 @@
       (color 0.3 0 0)
       ))
 
+(set 'mandelbrot-blue
+     (mandelbrot-texture
+      1800.0
+      (point2 -0.7489967346191402 -0.06952285766601607)
+      1000
+      (color 0 0 0.3)
+      (color 0 0 0.3)
+      (color 0 0 0.3)
+      ))
+
+(set 's1
+     (sphere
+      (point 0 1 0) 1 blue))
+(set 's2
+     (sphere
+      (point 2 0.5 2) 0.5 green))
+
+
 (set 'p1
      (texture-plane
-      mandelbrot
+      mandelbrot-red
       (point 0 0 0)
       (vector 0 1 0)
       1.0

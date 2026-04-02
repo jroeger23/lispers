@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::raytracer::{
     scene::Scene,
+    sphere::TextureSphere,
     texture::TextureWrapper,
     types::{Light, Point2},
 };
@@ -72,6 +73,22 @@ pub fn sphere(
     mat: ForeignDataWrapper<Material>,
 ) -> Result<ForeignDataWrapper<RTObjectWrapper>, EvalError> {
     Ok(ForeignDataWrapper::new(RTObjectWrapper::from(Sphere::new(*pos, rad, *mat))).into())
+}
+
+#[native_lisp_function(eval)]
+pub fn texture_sphere(
+    pos: ForeignDataWrapper<Point3>,
+    rad: f64,
+    tex: ForeignDataWrapper<TextureWrapper>,
+) -> Result<ForeignDataWrapper<RTObjectWrapper>, EvalError> {
+    Ok(
+        ForeignDataWrapper::new(RTObjectWrapper::from(TextureSphere::new(
+            *pos,
+            rad,
+            tex.clone(),
+        )))
+        .into(),
+    )
 }
 
 #[native_lisp_function(eval)]
@@ -539,6 +556,10 @@ pub fn mk_raytrace(layer: &mut EnvironmentLayer) {
         Expression::Function(mandelbrot_texture),
     );
     layer.set("sphere".to_string(), Expression::Function(sphere));
+    layer.set(
+        "texture-sphere".to_string(),
+        Expression::Function(texture_sphere),
+    );
     layer.set("scene".to_string(), Expression::Function(scene));
     layer.set("scene-add".to_string(), Expression::Function(scene_add));
     layer.set("camera".to_string(), Expression::Function(camera));
