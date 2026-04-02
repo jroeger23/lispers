@@ -121,7 +121,7 @@ impl Display for ForeignDataStore {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug)]
 /// A sum type of all possible lisp expressions.
 pub enum Expression {
     /// The classic lisp cons cell aka (a . b) used to construct expressions.
@@ -149,6 +149,60 @@ pub enum Expression {
     True,
     /// Nil
     Nil,
+}
+
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        use Expression::*;
+        match (self, other) {
+            (Cell(a1, b1), Cell(a2, b2)) => PartialEq::eq(a1, a2) && PartialEq::eq(b1, b2),
+            (
+                AnonymousFunction {
+                    argument_symbols: args1,
+                    body: body1,
+                },
+                AnonymousFunction {
+                    argument_symbols: args2,
+                    body: body2,
+                },
+            ) => PartialEq::eq(args1, args2) && PartialEq::eq(body1, body2),
+            (ForeignExpression(f1), ForeignExpression(f2)) => PartialEq::eq(f1, f2),
+            (Quote(e1), Quote(e2)) => PartialEq::eq(e1, e2),
+            (Symbol(s1), Symbol(s2)) => PartialEq::eq(s1, s2),
+            (Float(f1), Float(f2)) => PartialEq::eq(f1, f2),
+            (Nil, Nil) => true,
+            (True, True) => true,
+            _ => false,
+        }
+    }
+}
+
+impl PartialOrd for Expression {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        use Expression::*;
+        match (self, other) {
+            (Cell(a1, b1), Cell(a2, b2)) => a1.partial_cmp(a2).or_else(|| b1.partial_cmp(b2)),
+            (
+                AnonymousFunction {
+                    argument_symbols: args1,
+                    body: body1,
+                },
+                AnonymousFunction {
+                    argument_symbols: args2,
+                    body: body2,
+                },
+            ) => args1
+                .partial_cmp(args2)
+                .or_else(|| body1.partial_cmp(body2)),
+            (ForeignExpression(f1), ForeignExpression(f2)) => f1.partial_cmp(f2),
+            (Quote(e1), Quote(e2)) => e1.partial_cmp(e2),
+            (Symbol(s1), Symbol(s2)) => s1.partial_cmp(s2),
+            (Float(f1), Float(f2)) => f1.partial_cmp(f2),
+            (Nil, Nil) => Some(std::cmp::Ordering::Equal),
+            (True, True) => Some(std::cmp::Ordering::Equal),
+            _ => None,
+        }
+    }
 }
 
 impl<T: ForeignData> From<ForeignDataWrapper<T>> for Expression {
